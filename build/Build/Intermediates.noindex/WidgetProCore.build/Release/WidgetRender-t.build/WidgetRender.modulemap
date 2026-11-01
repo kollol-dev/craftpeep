@@ -1,4 +1,0 @@
-module WidgetRender {
-header "WidgetRender-Swift.h"
-export *
-}

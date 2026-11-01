@@ -1,4 +1,0 @@
-module WidgetSpec {
-header "WidgetSpec-Swift.h"
-export *
-}
