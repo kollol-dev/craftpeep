@@ -1,0 +1,16 @@
+{
+  "source": "/Users/kollol/Development/CraftPeep/App/CraftPeep/CraftPeep/ContentView.swift",
+  "tables": {
+    "Localizable": [
+      {
+        "comment": "",
+        "key": "Spec version %@",
+        "location": {
+          "startingColumn": 14,
+          "startingLine": 6
+        }
+      }
+    ]
+  },
+  "version": 1
+}

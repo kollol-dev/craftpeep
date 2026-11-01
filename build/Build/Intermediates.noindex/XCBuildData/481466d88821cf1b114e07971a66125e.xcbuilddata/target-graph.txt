@@ -1,0 +1,17 @@
+Target dependency graph (6 targets)
+Target 'CraftPeep' in project 'CraftPeep'
+➜ Explicit dependency on target 'WidgetProCore-product' in project 'WidgetProCore'
+Target 'WidgetProCore-product' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetSpec' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetExpr' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetData' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetRender' in project 'WidgetProCore'
+Target 'WidgetRender' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetSpec' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetExpr' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetData' in project 'WidgetProCore'
+Target 'WidgetData' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetSpec' in project 'WidgetProCore'
+➜ Explicit dependency on target 'WidgetExpr' in project 'WidgetProCore'
+Target 'WidgetExpr' in project 'WidgetProCore' (no dependencies)
+Target 'WidgetSpec' in project 'WidgetProCore' (no dependencies)

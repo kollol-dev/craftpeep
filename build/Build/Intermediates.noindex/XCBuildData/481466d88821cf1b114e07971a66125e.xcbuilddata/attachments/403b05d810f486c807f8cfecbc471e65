@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary.swiftconstvalues",
+    "dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary.d",
+    "diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary.dia",
+    "emit-module-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary-emit-module.dia",
+    "pch" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender-primary.swiftdeps"
+  },
+  "/Users/kollol/Development/CraftPeep/Packages/WidgetProCore/Sources/WidgetRender/WidgetRender.swift" : {
+    "index-unit-output-path" : "/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender.o",
+    "llvm-bc" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender.bc",
+    "object" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetRender-t.build/Objects-normal/x86_64/WidgetRender.o"
+  }
+}

@@ -1,0 +1,4 @@
+module WidgetExpr {
+header "WidgetExpr-Swift.h"
+export *
+}

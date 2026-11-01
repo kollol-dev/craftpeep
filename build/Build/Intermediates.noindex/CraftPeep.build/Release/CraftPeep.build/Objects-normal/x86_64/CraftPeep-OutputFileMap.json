@@ -1,0 +1,26 @@
+{
+  "" : {
+    "const-values" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary.swiftconstvalues",
+    "dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary.d",
+    "diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary.dia",
+    "emit-module-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary-emit-module.dia",
+    "pch" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/CraftPeep-primary.swiftdeps"
+  },
+  "/Users/kollol/Development/CraftPeep/App/CraftPeep/CraftPeep/ContentView.swift" : {
+    "index-unit-output-path" : "/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/ContentView.o",
+    "llvm-bc" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/ContentView.bc",
+    "object" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/ContentView.o"
+  },
+  "/Users/kollol/Development/CraftPeep/App/CraftPeep/CraftPeep/MyApp.swift" : {
+    "index-unit-output-path" : "/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/MyApp.o",
+    "llvm-bc" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/MyApp.bc",
+    "object" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/MyApp.o"
+  },
+  "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/DerivedSources/GeneratedAssetSymbols.swift" : {
+    "index-unit-output-path" : "/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/GeneratedAssetSymbols.o",
+    "llvm-bc" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/GeneratedAssetSymbols.bc",
+    "object" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/CraftPeep.build/Release/CraftPeep.build/Objects-normal/x86_64/GeneratedAssetSymbols.o"
+  }
+}

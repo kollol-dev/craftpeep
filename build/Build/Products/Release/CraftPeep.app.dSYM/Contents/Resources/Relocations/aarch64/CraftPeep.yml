@@ -1,0 +1,23 @@
+---
+triple:          'arm64-apple-darwin'
+binary-path:     '/Users/kollol/Development/CraftPeep/build/Build/Products/Release/CraftPeep.app/Contents/MacOS/CraftPeep'
+relocations:
+  - { offset: 0xAC583, size: 0x8, addend: 0x0, symName: '_$s10WidgetSpec0aB4InfoO7versionSSvau', symObjAddr: 0x0, symBinAddr: 0x10000158C, symSize: 0xC }
+  - { offset: 0xAC5A7, size: 0x8, addend: 0x0, symName: '_$s10WidgetSpec0aB4InfoO7versionSSvpZ', symObjAddr: 0x30, symBinAddr: 0x100001848, symSize: 0x0 }
+  - { offset: 0xAC5B5, size: 0x8, addend: 0x0, symName: '_$s10WidgetSpec0aB4InfoO7versionSSvau', symObjAddr: 0x0, symBinAddr: 0x10000158C, symSize: 0xC }
+  - { offset: 0xAC5F3, size: 0x8, addend: 0x0, symName: '_$s10WidgetSpec0aB4InfoOMa', symObjAddr: 0x1C, symBinAddr: 0x1000015A8, symSize: 0x10 }
+  - { offset: 0xAC633, size: 0x8, addend: 0x0, symName: '_$s10WidgetSpec0aB4InfoO7versionSSvgZ', symObjAddr: 0xC, symBinAddr: 0x100001598, symSize: 0x10 }
+  - { offset: 0xAC6A2, size: 0x8, addend: 0x0, symName: '_$s10WidgetExpr0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015B8, symSize: 0xC }
+  - { offset: 0xAC6C6, size: 0x8, addend: 0x0, symName: '_$s10WidgetExpr0aB4InfoO11placeholderSbvpZ', symObjAddr: 0x24, symBinAddr: 0x100001878, symSize: 0x0 }
+  - { offset: 0xAC6D4, size: 0x8, addend: 0x0, symName: '_$s10WidgetExpr0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015B8, symSize: 0xC }
+  - { offset: 0xAC712, size: 0x8, addend: 0x0, symName: '_$s10WidgetExpr0aB4InfoOMa', symObjAddr: 0x14, symBinAddr: 0x1000015CC, symSize: 0x10 }
+  - { offset: 0xAC752, size: 0x8, addend: 0x0, symName: '_$s10WidgetExpr0aB4InfoO11placeholderSbvgZ', symObjAddr: 0xC, symBinAddr: 0x1000015C4, symSize: 0x8 }
+  - { offset: 0xAC7C1, size: 0x8, addend: 0x0, symName: '_$s10WidgetData0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015DC, symSize: 0xC }
+  - { offset: 0xAC7E5, size: 0x8, addend: 0x0, symName: '_$s10WidgetData0aB4InfoO11placeholderSbvpZ', symObjAddr: 0x24, symBinAddr: 0x10000189C, symSize: 0x0 }
+  - { offset: 0xAC7F3, size: 0x8, addend: 0x0, symName: '_$s10WidgetData0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015DC, symSize: 0xC }
+  - { offset: 0xAC811, size: 0x8, addend: 0x0, symName: '_$s10WidgetData0aB4InfoOMa', symObjAddr: 0x14, symBinAddr: 0x1000015E8, symSize: 0x10 }
+  - { offset: 0xAC886, size: 0x8, addend: 0x0, symName: '_$s12WidgetRender0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015F8, symSize: 0xC }
+  - { offset: 0xAC8AA, size: 0x8, addend: 0x0, symName: '_$s12WidgetRender0aB4InfoO11placeholderSbvpZ', symObjAddr: 0x30, symBinAddr: 0x1000018C0, symSize: 0x0 }
+  - { offset: 0xAC8B8, size: 0x8, addend: 0x0, symName: '_$s12WidgetRender0aB4InfoO11placeholderSbvau', symObjAddr: 0x0, symBinAddr: 0x1000015F8, symSize: 0xC }
+  - { offset: 0xAC8D6, size: 0x8, addend: 0x0, symName: '_$s12WidgetRender0aB4InfoOMa', symObjAddr: 0x14, symBinAddr: 0x100001604, symSize: 0x10 }
+...

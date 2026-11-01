@@ -1,0 +1,16 @@
+{
+  "" : {
+    "const-values" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary.swiftconstvalues",
+    "dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary.d",
+    "diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary.dia",
+    "emit-module-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary-emit-module.d",
+    "emit-module-diagnostics" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary-emit-module.dia",
+    "pch" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary-Bridging-header.pch",
+    "swift-dependencies" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec-primary.swiftdeps"
+  },
+  "/Users/kollol/Development/CraftPeep/Packages/WidgetProCore/Sources/WidgetSpec/WidgetSpec.swift" : {
+    "index-unit-output-path" : "/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec.o",
+    "llvm-bc" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec.bc",
+    "object" : "/Users/kollol/Development/CraftPeep/build/Build/Intermediates.noindex/WidgetProCore.build/Release/WidgetSpec-t.build/Objects-normal/arm64/WidgetSpec.o"
+  }
+}

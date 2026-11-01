@@ -1,0 +1,4 @@
+module WidgetData {
+header "WidgetData-Swift.h"
+export *
+}
