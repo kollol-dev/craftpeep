@@ -1,0 +1,158 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://widgetpro.example/schema/0.1/widget.json",
+  "title": "WidgetPro widget spec v0.1 (draft)",
+  "description": "Declarative widget definition. Intentionally loose in v0.1; tighten data sources with oneOf per type once the runtime exists.",
+  "type": "object",
+  "required": ["spec", "id", "name", "version", "view"],
+  "additionalProperties": false,
+  "properties": {
+    "$schema": { "type": "string" },
+    "spec": { "const": "0.1" },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
+      "description": "Reverse-DNS style unique id, e.g. com.widgetpro.clock"
+    },
+    "name": { "type": "string", "maxLength": 60 },
+    "description": { "type": "string", "maxLength": 300 },
+    "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" },
+    "author": { "type": "string" },
+    "sizes": {
+      "type": "array",
+      "items": { "enum": ["small", "medium", "large"] },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "platforms": {
+      "type": "array",
+      "items": { "enum": ["macos", "ios"] },
+      "description": "Defaults to both. Declare only what the widget really supports."
+    },
+    "permissions": { "$ref": "#/$defs/permissions" },
+    "settings": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/setting" }
+    },
+    "data": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/dataSource" }
+    },
+    "view": {
+      "type": "object",
+      "description": "One component tree per size. 'default' is used when a size has no entry.",
+      "required": ["default"],
+      "propertyNames": { "enum": ["default", "small", "medium", "large"] },
+      "additionalProperties": { "$ref": "#/$defs/component" }
+    }
+  },
+  "$defs": {
+    "permissions": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "network": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Hostnames the widget may contact. Anything else is blocked."
+        },
+        "system": {
+          "type": "array",
+          "items": { "enum": ["calendar", "reminders", "battery", "cpu", "memory", "network", "nowPlaying", "location"] }
+        },
+        "ai": { "type": "boolean", "description": "May call the user's configured AI provider." },
+        "commands": { "type": "boolean", "description": "macOS only. Shell commands. Always shown on the install sheet." },
+        "files": { "type": "array", "items": { "type": "string" }, "description": "macOS only. Paths the widget may read." }
+      }
+    },
+    "setting": {
+      "type": "object",
+      "required": ["key", "type", "label"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "type": "string", "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$" },
+        "type": { "enum": ["string", "number", "boolean", "select", "color", "stringList", "secret"] },
+        "label": { "type": "string" },
+        "default": {},
+        "options": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["value", "label"],
+            "properties": { "value": {}, "label": { "type": "string" } }
+          }
+        },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "help": { "type": "string" }
+      }
+    },
+    "dataSource": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["static", "time", "http", "rss", "system", "ai"] },
+        "refresh": { "type": "string", "description": "Duration like '30s', '15m', '1h', or an expression that evaluates to one." },
+        "value": { "description": "static: literal value." },
+        "url": { "type": "string", "description": "http/rss: may contain {{ }} expressions." },
+        "method": { "enum": ["GET"], "description": "v0.1 is read-only." },
+        "headers": { "type": "object", "additionalProperties": { "type": "string" } },
+        "path": { "type": "string", "description": "http: dot path into the JSON response, e.g. 'data.items'." },
+        "each": { "type": "string", "description": "http: expression yielding an array; one request per element, results collected into an array." },
+        "as": { "type": "string", "description": "Name of the loop variable for 'each'." },
+        "map": { "type": "object", "additionalProperties": { "type": "string" }, "description": "Reshape each response into a flat object. 'response' is in scope." },
+        "limit": { "type": "integer", "minimum": 1, "maximum": 100 },
+        "kind": { "type": "string", "description": "system: which system source, e.g. 'battery'." },
+        "input": { "type": "string", "description": "ai: expression producing the text to process." },
+        "prompt": { "type": "string", "description": "ai: instruction for the model." },
+        "cache": { "type": "string", "description": "ai: minimum time between model calls, e.g. '1h'." },
+        "maxTokens": { "type": "integer", "maximum": 1000 }
+      }
+    },
+    "action": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": { "enum": ["openURL", "copy", "refresh"] },
+        "value": { "type": "string" }
+      }
+    },
+    "component": {
+      "type": "object",
+      "required": ["type"],
+      "additionalProperties": false,
+      "properties": {
+        "type": {
+          "enum": ["vstack", "hstack", "zstack", "spacer", "divider", "text", "number", "image", "icon", "progress", "chart", "list", "badge", "button"]
+        },
+        "children": { "type": "array", "items": { "$ref": "#/$defs/component" } },
+        "item": { "$ref": "#/$defs/component", "description": "list: template rendered per element." },
+        "each": { "type": "string", "description": "list: expression yielding an array." },
+        "as": { "type": "string", "description": "list: loop variable name. Defaults to 'item'." },
+        "limit": { "type": "integer", "minimum": 1 },
+        "when": { "type": "string", "description": "Render only if this expression is truthy." },
+        "text": { "type": "string" },
+        "value": { "type": ["string", "number"] },
+        "format": { "type": "string" },
+        "size": { "enum": ["caption", "body", "title", "display"] },
+        "weight": { "enum": ["light", "regular", "medium", "bold"] },
+        "color": { "type": "string", "description": "Token (primary, secondary, accent, positive, negative), hex, or expression." },
+        "background": { "type": "string" },
+        "align": { "enum": ["leading", "center", "trailing"] },
+        "spacing": { "type": "number" },
+        "padding": { "type": "number" },
+        "radius": { "type": "number" },
+        "lines": { "type": "integer", "minimum": 1 },
+        "kind": { "enum": ["ring", "bar", "line", "area", "sparkline", "columns"] },
+        "series": { "type": "string", "description": "chart: expression yielding an array of numbers." },
+        "min": { "type": "number" },
+        "max": { "type": "number" },
+        "symbol": { "type": "string", "description": "icon: name from the built-in icon set." },
+        "url": { "type": "string", "description": "image: https URL (host must be in permissions.network) or data: URI." },
+        "action": { "$ref": "#/$defs/action" }
+      }
+    }
+  }
+}

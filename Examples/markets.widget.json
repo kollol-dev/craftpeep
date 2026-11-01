@@ -1,0 +1,85 @@
+{
+  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "spec": "0.1",
+  "id": "com.widgetpro.markets",
+  "name": "Markets",
+  "description": "Live quotes for a list of tickers. Needs a free Finnhub API key.",
+  "version": "1.0.0",
+  "sizes": ["small", "medium", "large"],
+  "permissions": {
+    "network": ["finnhub.io"]
+  },
+  "settings": [
+    {
+      "key": "symbols",
+      "type": "stringList",
+      "label": "Tickers",
+      "default": ["AAPL", "MSFT", "NVDA", "GOOGL", "AMZN", "META"]
+    },
+    {
+      "key": "apiKey",
+      "type": "secret",
+      "label": "Finnhub API key",
+      "help": "Stored in the Keychain. Never written to the widget file or shared in Setups."
+    }
+  ],
+  "data": {
+    "quotes": {
+      "type": "http",
+      "each": "{{ settings.symbols }}",
+      "as": "symbol",
+      "url": "https://finnhub.io/api/v1/quote?symbol={{ symbol }}&token={{ secrets.apiKey }}",
+      "refresh": "60s",
+      "map": {
+        "symbol": "{{ symbol }}",
+        "price": "{{ response.c }}",
+        "change": "{{ response.d }}",
+        "changePct": "{{ response.dp }}"
+      }
+    }
+  },
+  "view": {
+    "small": {
+      "type": "vstack",
+      "padding": 14,
+      "spacing": 2,
+      "children": [
+        { "type": "text", "text": "{{ data.quotes[0].symbol }}", "size": "caption", "color": "secondary" },
+        { "type": "text", "text": "{{ format(data.quotes[0].price, '0.00') }}", "size": "display", "weight": "medium" },
+        {
+          "type": "text",
+          "text": "{{ format(data.quotes[0].changePct, '+0.00;-0.00') }}%",
+          "color": "{{ data.quotes[0].changePct >= 0 ? 'positive' : 'negative' }}"
+        }
+      ]
+    },
+    "default": {
+      "type": "vstack",
+      "padding": 14,
+      "spacing": 8,
+      "children": [
+        { "type": "text", "text": "Markets", "size": "caption", "color": "secondary" },
+        {
+          "type": "list",
+          "each": "{{ data.quotes }}",
+          "as": "q",
+          "limit": 5,
+          "item": {
+            "type": "hstack",
+            "spacing": 8,
+            "children": [
+              { "type": "text", "text": "{{ q.symbol }}", "weight": "medium" },
+              { "type": "spacer" },
+              { "type": "text", "text": "{{ format(q.price, '0.00') }}" },
+              {
+                "type": "badge",
+                "text": "{{ format(q.changePct, '+0.00;-0.00') }}%",
+                "color": "{{ q.changePct >= 0 ? 'positive' : 'negative' }}"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,42 @@
+{
+  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "spec": "0.1",
+  "id": "com.widgetpro.clock",
+  "name": "Clock",
+  "description": "Time and date, with optional seconds.",
+  "version": "1.0.0",
+  "sizes": ["small", "medium"],
+  "permissions": {},
+  "settings": [
+    { "key": "hour24", "type": "boolean", "label": "24-hour time", "default": true },
+    { "key": "showSeconds", "type": "boolean", "label": "Show seconds", "default": false }
+  ],
+  "data": {
+    "now": {
+      "type": "time",
+      "refresh": "{{ settings.showSeconds ? '1s' : '30s' }}"
+    }
+  },
+  "view": {
+    "default": {
+      "type": "vstack",
+      "spacing": 4,
+      "padding": 16,
+      "align": "center",
+      "children": [
+        {
+          "type": "text",
+          "text": "{{ format(data.now.date, settings.hour24 ? (settings.showSeconds ? 'HH:mm:ss' : 'HH:mm') : (settings.showSeconds ? 'h:mm:ss a' : 'h:mm a')) }}",
+          "size": "display",
+          "weight": "light"
+        },
+        {
+          "type": "text",
+          "text": "{{ format(data.now.date, 'EEEE d MMMM') }}",
+          "size": "caption",
+          "color": "secondary"
+        }
+      ]
+    }
+  }
+}

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "spec": "0.1",
+  "id": "com.widgetpro.ai-news",
+  "name": "AI News Briefing",
+  "description": "Top Hacker News stories for a topic, with a short AI-written briefing.",
+  "version": "1.0.0",
+  "sizes": ["medium", "large"],
+  "permissions": {
+    "network": ["hnrss.org"],
+    "ai": true
+  },
+  "settings": [
+    {
+      "key": "query",
+      "type": "string",
+      "label": "Topic keywords",
+      "default": "AI OR LLM OR Anthropic OR OpenAI"
+    },
+    {
+      "key": "minPoints",
+      "type": "number",
+      "label": "Minimum points",
+      "default": 100,
+      "min": 0,
+      "max": 1000
+    },
+    {
+      "key": "briefing",
+      "type": "boolean",
+      "label": "AI briefing",
+      "default": true,
+      "help": "Uses your configured AI provider, at most once an hour."
+    }
+  ],
+  "data": {
+    "stories": {
+      "type": "rss",
+      "url": "https://hnrss.org/newest?q={{ encode(settings.query) }}&points={{ settings.minPoints }}",
+      "refresh": "15m",
+      "limit": 8
+    },
+    "summary": {
+      "type": "ai",
+      "input": "{{ join(map(data.stories, 'title'), '\\n') }}",
+      "prompt": "In two sentences, say what is notable in these headlines for a senior software engineer. Be factual, no hype.",
+      "cache": "1h",
+      "maxTokens": 120
+    }
+  },
+  "view": {
+    "default": {
+      "type": "vstack",
+      "padding": 14,
+      "spacing": 8,
+      "children": [
+        { "type": "text", "text": "AI & tech", "size": "caption", "color": "secondary" },
+        {
+          "type": "text",
+          "when": "{{ settings.briefing && data.summary }}",
+          "text": "{{ data.summary }}",
+          "size": "body",
+          "lines": 4
+        },
+        { "type": "divider", "when": "{{ settings.briefing }}" },
+        {
+          "type": "list",
+          "each": "{{ data.stories }}",
+          "as": "s",
+          "limit": 4,
+          "item": {
+            "type": "text",
+            "text": "{{ s.title }}",
+            "size": "caption",
+            "lines": 2,
+            "action": { "type": "openURL", "value": "{{ s.link }}" }
+          }
+        }
+      ]
+    },
+    "large": {
+      "type": "vstack",
+      "padding": 16,
+      "spacing": 10,
+      "children": [
+        { "type": "text", "text": "AI & tech", "size": "caption", "color": "secondary" },
+        {
+          "type": "text",
+          "when": "{{ settings.briefing && data.summary }}",
+          "text": "{{ data.summary }}",
+          "lines": 5
+        },
+        { "type": "divider" },
+        {
+          "type": "list",
+          "each": "{{ data.stories }}",
+          "as": "s",
+          "limit": 8,
+          "item": {
+            "type": "text",
+            "text": "{{ s.title }}",
+            "lines": 2,
+            "action": { "type": "openURL", "value": "{{ s.link }}" }
+          }
+        }
+      ]
+    }
+  }
+}
