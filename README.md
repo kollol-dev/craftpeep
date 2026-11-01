@@ -1,11 +1,10 @@
 # CraftPeep
 
-> Working name. Rename freely.
-
 A native macOS app for live desktop widgets that you can create three ways: describe one to an AI,
 build it visually, or write it by hand. Mac first, iPhone later.
 
-**Status:** early design. The widget spec v0.1 is drafted; the code is a skeleton.
+**Status:** early development. The widget spec v0.1 is drafted, the core package decodes and validates
+widget files, and a macOS app shell builds and runs. There are no real widgets on screen yet.
 
 ## Idea
 
@@ -24,39 +23,63 @@ Principles:
 
 | Path | Contents |
 |---|---|
+| `App/CraftPeep/` | macOS app (Xcode project, SwiftUI) |
+| `Packages/WidgetProCore/` | Swift package: `Sources/` and `Tests/` |
 | `Docs/SPEC.md` | Widget spec v0.1 overview: anatomy, data sources, components, expressions |
 | `Schema/widget.schema.json` | JSON Schema for validation and editor autocomplete |
 | `Examples/` | Clock, markets ticker and AI news briefing example widgets |
-| `Sources/WidgetSpec` | Codable models, validation, versioning |
-| `Sources/WidgetExpr` | `{{ }}` expression interpreter |
-| `Sources/WidgetData` | Data sources, scheduler, caching, permission enforcement |
-| `Sources/WidgetRender` | SwiftUI rendering of a spec plus data |
-| `Tests/` | Unit tests |
-| `App/` | macOS app target (to be created in Xcode) |
+| `scripts/build-dmg.sh` | Builds a Release app and packages it as a DMG (local use) |
+
+Package targets:
+
+| Target | Purpose |
+|---|---|
+| `WidgetSpec` | Codable models, loader, validation, version handling |
+| `WidgetExpr` | `{{ }}` expression interpreter (not started) |
+| `WidgetData` | Data sources, scheduler, caching, permission enforcement (not started) |
+| `WidgetRender` | SwiftUI rendering of a spec plus data (not started) |
 
 ## Getting started
 
-Requires a recent Xcode with Swift 6 (see `Package.swift` for the tools version).
+Requires a recent Xcode with Swift 6 and macOS 14 or later.
+
+Run the package tests:
 
 ```sh
-swift build
+cd Packages/WidgetProCore
 swift test
 ```
 
-Then create the macOS app target as described in `App/README.md`.
+Run the app: open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode, choose **My Mac**, press Cmd+R.
+
+Build a DMG for local use:
+
+```sh
+./scripts/build-dmg.sh
+```
+
+The DMG is not notarised, so macOS may block it on first launch: open System Settings > Privacy & Security
+and choose **Open Anyway**.
+
+## Writing a widget
+
+Start from a file in `Examples/` and check it against `Schema/widget.schema.json`. The core package also
+validates rules the schema cannot express, for example that every network host a data source uses is
+declared in `permissions.network`.
 
 ## Roadmap
 
-1. Spec models: decode the example widgets, with tests
-2. Expression interpreter with tests for every function
-3. Renderer: draw the clock, then lists and conditionals
-4. Floating desktop widget window with persisted position
-5. Data sources: time, http, rss behind a scheduler, with network permissions enforced
-6. Settings form and install/permission sheet, Keychain for secrets
-7. Spec editor with live preview
-8. AI builder: provider abstraction, schema-constrained generation, validate and retry
-9. Distribution: signing, notarisation, DMG, updates, licensing
-10. Later: visual builder, data source builder, gallery and shareable setups, iPhone app
+- [x] App shell linked to the core package
+- [ ] 1. Spec models, loader and validation, with tests against the example widgets
+- [ ] 2. Expression interpreter with tests for every function
+- [ ] 3. Renderer: draw the clock, then lists and conditionals
+- [ ] 4. Floating desktop widget window with persisted position
+- [ ] 5. Data sources: time, http, rss behind a scheduler, with network permissions enforced
+- [ ] 6. Settings form and install/permission sheet, Keychain for secrets
+- [ ] 7. Spec editor with live preview
+- [ ] 8. AI builder: provider abstraction, schema-constrained generation, validate and retry
+- [ ] 9. Distribution: signing, notarisation, DMG, updates, licensing
+- [ ] 10. Later: visual builder, data source builder, gallery and shareable setups, iPhone app
 
 ## Notes
 
