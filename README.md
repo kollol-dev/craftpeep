@@ -1,4 +1,4 @@
-# WidgetPro
+# CraftPeep
 
 > Working name. Rename freely.
 
