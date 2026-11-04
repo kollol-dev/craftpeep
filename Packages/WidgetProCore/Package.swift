@@ -16,6 +16,7 @@ let package = Package(
         .target(name: "WidgetExpr"),
         .target(name: "WidgetData", dependencies: ["WidgetSpec", "WidgetExpr"]),
         .target(name: "WidgetRender", dependencies: ["WidgetSpec", "WidgetExpr", "WidgetData"]),
+        .testTarget(name: "WidgetExprTests", dependencies: ["WidgetExpr"]),
         .testTarget(name: "WidgetSpecTests", dependencies: ["WidgetSpec"])
     ]
 )
