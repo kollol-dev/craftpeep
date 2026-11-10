@@ -1,7 +1,7 @@
 {
-  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "$schema": "https://craftpeep.example/schema/0.1/widget.json",
   "spec": "0.1",
-  "id": "com.widgetpro.markets",
+  "id": "com.craftpeep.markets",
   "name": "Markets",
   "description": "Live quotes for a list of tickers. Needs a free Finnhub API key.",
   "version": "1.0.0",

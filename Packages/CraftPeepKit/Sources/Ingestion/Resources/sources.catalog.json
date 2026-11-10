@@ -1,0 +1,25 @@
+{
+  "verified": "2026-11-10",
+  "sources": [
+    { "kind": "hackernews", "name": "Hacker News", "url": "https://hn.algolia.com/api/v1/search?tags=front_page&hitsPerPage=60", "siteURL": "https://news.ycombinator.com", "tier": "community", "topics": ["tech", "dev"], "refreshSeconds": 900 },
+
+    { "kind": "rss", "name": "TechCrunch", "url": "https://techcrunch.com/feed/", "siteURL": "https://techcrunch.com", "tier": "reporting", "topics": ["tech", "business"], "refreshSeconds": 1800 },
+    { "kind": "rss", "name": "The Verge", "url": "https://www.theverge.com/rss/index.xml", "siteURL": "https://www.theverge.com", "tier": "reporting", "topics": ["tech"], "refreshSeconds": 1800 },
+    { "kind": "rss", "name": "Ars Technica", "url": "https://feeds.arstechnica.com/arstechnica/index", "siteURL": "https://arstechnica.com", "tier": "reporting", "topics": ["tech"], "refreshSeconds": 1800 },
+    { "kind": "rss", "name": "Wired", "url": "https://www.wired.com/feed/rss", "siteURL": "https://www.wired.com", "tier": "reporting", "topics": ["tech"], "refreshSeconds": 1800 },
+    { "kind": "rss", "name": "MIT Technology Review", "url": "https://www.technologyreview.com/feed/", "siteURL": "https://www.technologyreview.com", "tier": "reporting", "topics": ["tech", "ai"], "refreshSeconds": 3600 },
+
+    { "kind": "rss", "name": "OpenAI News", "url": "https://openai.com/news/rss.xml", "siteURL": "https://openai.com", "tier": "official", "topics": ["ai"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Google DeepMind", "url": "https://deepmind.google/blog/rss.xml", "siteURL": "https://deepmind.google", "tier": "official", "topics": ["ai"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Google AI Blog", "url": "https://blog.google/technology/ai/rss/", "siteURL": "https://blog.google", "tier": "official", "topics": ["ai"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Hugging Face Blog", "url": "https://huggingface.co/blog/feed.xml", "siteURL": "https://huggingface.co", "tier": "official", "topics": ["ai", "dev"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Mistral AI", "url": "https://mistral.ai/rss.xml", "siteURL": "https://mistral.ai", "tier": "official", "topics": ["ai"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "NVIDIA Blog", "url": "https://blogs.nvidia.com/feed/", "siteURL": "https://blogs.nvidia.com", "tier": "official", "topics": ["ai", "business"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Engineering at Meta", "url": "https://engineering.fb.com/feed/", "siteURL": "https://engineering.fb.com", "tier": "official", "topics": ["dev"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "GitHub Blog", "url": "https://github.blog/feed/", "siteURL": "https://github.blog", "tier": "official", "topics": ["dev"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Apple Developer News", "url": "https://developer.apple.com/news/rss/news.rss", "siteURL": "https://developer.apple.com", "tier": "official", "topics": ["dev"], "refreshSeconds": 3600 },
+    { "kind": "rss", "name": "Swift.org", "url": "https://www.swift.org/atom.xml", "siteURL": "https://www.swift.org", "tier": "official", "topics": ["dev"], "refreshSeconds": 3600 },
+
+    { "kind": "rss", "name": "Simon Willison", "url": "https://simonwillison.net/atom/everything/", "siteURL": "https://simonwillison.net", "tier": "analysis", "topics": ["ai", "dev"], "refreshSeconds": 3600 }
+  ]
+}

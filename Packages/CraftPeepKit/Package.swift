@@ -1,22 +1,44 @@
 // swift-tools-version: 6.0
 import PackageDescription
 
-// Platform minimums are placeholders: confirm against current Xcode/macOS before release.
 let package = Package(
-    name: "WidgetProCore",
-    platforms: [.macOS(.v14), .iOS(.v17)],
+    name: "CraftPeepKit",
+    platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         .library(
-            name: "WidgetProCore",
-            targets: ["WidgetSpec", "WidgetExpr", "WidgetData", "WidgetRender"]
+            name: "CraftPeepKit",
+            targets: [
+                "Domain", "Persistence", "Ingestion",
+                "WidgetSpec", "WidgetExpr", "WidgetRuntime", "WidgetRender"
+            ]
         )
     ],
+    dependencies: [
+        // The only third-party dependency (ADR-002). Pinned exactly; review before bumping.
+        .package(url: "https://github.com/groue/GRDB.swift.git", exact: "7.12.0")
+    ],
     targets: [
+        .target(name: "Domain"),
+        .target(
+            name: "Persistence",
+            dependencies: ["Domain", .product(name: "GRDB", package: "GRDB.swift")]
+        ),
+        .target(
+            name: "Ingestion",
+            dependencies: ["Domain"],
+            resources: [.process("Resources")]
+        ),
         .target(name: "WidgetSpec"),
         .target(name: "WidgetExpr"),
-        .target(name: "WidgetData", dependencies: ["WidgetSpec", "WidgetExpr"]),
-        .target(name: "WidgetRender", dependencies: ["WidgetSpec", "WidgetExpr", "WidgetData"]),
+        .target(name: "WidgetRuntime", dependencies: ["WidgetSpec", "WidgetExpr"]),
+        .target(name: "WidgetRender", dependencies: ["WidgetSpec", "WidgetExpr", "WidgetRuntime"]),
         .testTarget(name: "WidgetExprTests", dependencies: ["WidgetExpr"]),
-        .testTarget(name: "WidgetSpecTests", dependencies: ["WidgetSpec"])
+        .testTarget(name: "WidgetSpecTests", dependencies: ["WidgetSpec"]),
+        .testTarget(
+            name: "IngestionTests",
+            dependencies: ["Ingestion", "Persistence", "Domain"],
+            resources: [.copy("Fixtures")]
+        ),
+        .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Domain"])
     ]
 )

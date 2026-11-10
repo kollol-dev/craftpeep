@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+  <title>Example Lab</title>
+  <link href="https://lab.example.org/"/>
+  <updated>2026-11-10T08:00:00Z</updated>
+  <entry>
+    <title type="html">Introducing Model &lt;em&gt;Seven&lt;/em&gt;</title>
+    <link rel="self" href="https://lab.example.org/feed/entry/7"/>
+    <link rel="alternate" type="text/html" href="https://lab.example.org/blog/model-seven"/>
+    <id>tag:lab.example.org,2026:7</id>
+    <published>2026-11-10T07:45:12.345Z</published>
+    <updated>2026-11-10T08:00:00Z</updated>
+    <author><name>Grace Example</name><email>grace@example.org</email></author>
+    <summary type="html">&lt;p&gt;Weights and code are available today.&lt;/p&gt;</summary>
+  </entry>
+  <entry>
+    <title>Entry with only updated</title>
+    <link href="https://lab.example.org/blog/second"/>
+    <id>tag:lab.example.org,2026:8</id>
+    <updated>2026-11-09T12:00:00+01:00</updated>
+    <content type="xhtml"><div xmlns="http://www.w3.org/1999/xhtml"><p>Nested <b>markup</b> body.</p></div></content>
+  </entry>
+</feed>

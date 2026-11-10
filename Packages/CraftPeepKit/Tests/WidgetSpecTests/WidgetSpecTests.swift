@@ -6,7 +6,7 @@ final class WidgetSpecTests: XCTestCase {
     // MARK: - Helpers
 
     /// Walks up from this file until it finds an `Examples` folder.
-    /// Works whether the package sits at the repo root or in Packages/WidgetProCore.
+    /// Works whether the package sits at the repo root or in Packages/CraftPeepKit.
     private func examplesDirectory(from file: String = #filePath) throws -> URL {
         var directory = URL(fileURLWithPath: file).deletingLastPathComponent()
         for _ in 0..<6 {
@@ -68,7 +68,7 @@ final class WidgetSpecTests: XCTestCase {
 
     func testClockExample() throws {
         let widget = try loadExample("clock.widget.json")
-        XCTAssertEqual(widget.id, "com.widgetpro.clock")
+        XCTAssertEqual(widget.id, "com.craftpeep.clock")
         XCTAssertEqual(widget.settings?.count, 2)
         XCTAssertEqual(widget.data?["now"]?.type, .time)
         XCTAssertEqual(widget.view["default"]?.type, .vstack)

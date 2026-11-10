@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://widgetpro.example/schema/0.1/widget.json",
-  "title": "WidgetPro widget spec v0.1 (draft)",
+  "$id": "https://craftpeep.example/schema/0.1/widget.json",
+  "title": "CraftPeep widget spec v0.1 (draft)",
   "description": "Declarative widget definition. Intentionally loose in v0.1; tighten data sources with oneOf per type once the runtime exists.",
   "type": "object",
   "required": ["spec", "id", "name", "version", "view"],
@@ -12,7 +12,7 @@
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
-      "description": "Reverse-DNS style unique id, e.g. com.widgetpro.clock"
+      "description": "Reverse-DNS style unique id, e.g. com.craftpeep.clock"
     },
     "name": { "type": "string", "maxLength": 60 },
     "description": { "type": "string", "maxLength": 300 },
