@@ -1,4 +1,4 @@
-# WidgetPro Widget Spec v0.1 (draft)
+# CraftPeep Widget Spec v0.1 (draft)
 
 A widget is **one JSON file**. Every authoring method (AI builder, visual builder, spec editor, hand-written files) produces and edits this same format. The Mac app renders it with SwiftUI; the iPhone app can later render the same file through WidgetKit.
 
