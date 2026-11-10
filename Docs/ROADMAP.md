@@ -50,16 +50,34 @@ Known gaps carried into M3: no automated test opens a database created by an old
 
 Done when: launching the app and pressing refresh stores real stories from ten feeds and HN, a second refresh adds no duplicates and mostly receives 304s, and a relaunch shows the stored stories offline.
 
-### M3 Intelligence core
+### M3 Intelligence core — complete, with three items moved to M4
 
-- [ ] Scheduler with per-source intervals, backoff and health; launch at login; menu bar agent mode
-- [ ] Clustering tiers 1 and 2, with a labelled headline fixture and measured precision and recall
-- [ ] Rules engine: source tier, Hype Filter kind, verification status, entity and topic tagging
-- [ ] Ranking with reasons; interests and mutes
-- [ ] Catalogue grown to about 30 verified feeds
-- [ ] Retention job
+- [x] Scheduling: per-source intervals, exponential backoff for failing sources (capped at a day), checked every five minutes while the app runs
+- [x] Clustering tiers 1 and 2, with a labelled headline fixture and measured precision and recall
+- [x] Rules engine: Hype Filter kind with the rule that fired, verification status, entity and topic tagging
+- [x] Ranking with reasons; interests and mutes in the store and the ranker
+- [x] Catalogue grown to 34 verified sources
+- [x] Retention: articles older than 90 days are neither stored nor kept; fetch log kept 14 days
+- [x] App: Top (ranked, last three days) and Latest views, one row per story, a popover listing every source for a story
 
-Done when: the same story from several sources shows as one cluster with all sources, each cluster shows a kind with its basis or "unclassified", and the ranked list is one I would actually read.
+Moved to M4, because they are UI that belongs with Settings and the menu bar: launch at login, menu bar agent mode, and a screen for editing interests and mutes. Until then interests can only be set in the database.
+
+Measured on 10 November 2026:
+
+- Labelled fixture (60 synthetic headlines, 12 multi-article stories): pairwise precision 1.00, recall 0.73. No wrong merges. The misses are same-story pairs whose headlines share few words.
+- Live catalogue (965 articles, 34 sources, no failures): 8 multi-source stories found, all 8 correct on inspection, clustered in under half a second. Recall on live data is unknown; I saw at least one missed pair (two differently worded reports of the same share listing).
+- Classification on live data: 111 of 957 stories received a kind; the rest are honestly unclassified. A first pass of the rules mislabelled several headlines ("toilet paper" as research, "might" as speculation); those rules were tightened and the cases are now tests.
+- The existing database from M2 migrated in place (schema v1 to v2) on launch.
+
+Not verified: the Top/Latest switch, the sources popover and the row layout have not been looked at on screen.
+
+Known limits carried forward:
+
+- Title-only clustering will keep missing differently worded reports of one story. The next step, if it matters in daily use, is rarity weighting of tokens or on-device sentence embeddings (tier 3). Measure first.
+- Two Hacker News submissions pointing at a site's home page would merge by URL.
+- Entity tagging is by name, so "Claude Monet" tags Anthropic. Recorded as a test.
+- A cluster is not recomputed when one of its sources is deleted; there is no way to delete a source yet.
+- Most stories have no kind. Raising coverage needs either many more rules or the optional model pass planned for v0.2.
 
 ### M4 Intelligence experience (v0.1 release candidate)
 
@@ -69,7 +87,8 @@ Done when: the same story from several sources shows as one cluster with all sou
 - [ ] Source management UI with health
 - [ ] `AI` target: provider protocol, Anthropic and OpenAI-compatible clients, Keychain, ledger, budget
 - [ ] Cluster summaries; morning briefing with the non-AI digest fallback
-- [ ] Menu bar Pulse
+- [ ] Menu bar Pulse; menu bar agent mode; launch at login
+- [ ] Interests and mutes editor
 - [ ] Widget slice: spec 0.2 `query` source, `WidgetRuntime`, `WidgetRender` for News List, one desktop-level panel with persisted position
 - [ ] Accessibility pass; performance budgets measured
 

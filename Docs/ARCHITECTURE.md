@@ -6,19 +6,23 @@ Status: accepted direction, 10 November 2026. Describes the target; see "Current
 
 | Exists | Notes |
 |---|---|
-| `Packages/CraftPeepKit` targets `Domain`, `Persistence`, `Ingestion` | The M2 ingestion slice. 44 tests. |
+| `Packages/CraftPeepKit` targets `Domain`, `Persistence`, `Ingestion`, `Intelligence` | Ingestion (M2) and clustering, classification, tagging, ranking (M3). 80 tests. |
 | `WidgetSpec` (Codable models, loader, validation) and `WidgetExpr` (lexer, parser, interpreter, 20 functions, templates) | 59 tests. Not yet connected to the app. |
 | `WidgetRuntime`, `WidgetRender` | Empty placeholder targets. |
-| `App/CraftPeep` | Sandboxed app with a searchable story list, refresh and source health. |
+| `App/CraftPeep` | Sandboxed app: ranked and latest story lists, one row per story, search, per-story source list, source health. |
 | `Docs/SPEC.md`, `Schema/widget.schema.json`, three example widgets | Spec v0.1 draft. |
 
 ### Implemented so far, and where it differs from the target below
 
-- **Schema v1 is a subset:** `source`, `article`, `article_fts`, `fetch_log`. Clusters, entities, user state, summaries, briefings, AI usage and widget instances arrive as later migrations with the code that uses them.
-- **Community signal lives on the article** (`score`, `comment_count`, `discussion_url`) until clusters exist; the cluster columns in the target schema will be derived from it.
+- **Schema is at v2:** v1 has `source`, `article`, `article_fts`, `fetch_log`; v2 adds `cluster`, `article.cluster_id`, `cluster_entity`, `interest`. User state, summaries, briefings, AI usage and widget instances arrive as later migrations with the code that uses them.
+- **No `entity` table.** Entities come from the bundled rules file, so `cluster_entity` stores the name and kind directly. A table of entities becomes worthwhile when users can add their own.
+- **`cluster.independent_count`** was added to the design: sources doing their own reporting, excluding community aggregators. Ranking uses it so that a Hacker News link to an article does not count as a second report.
+- **No `title_sig` column.** Headlines are tokenised in memory at clustering time; a few thousand per run takes milliseconds.
+- **Rules live in the package** at `Sources/Intelligence/Resources/classification.rules.json`. User overrides are not implemented.
+- **Community signal is stored on the article** (`score`, `comment_count`, `discussion_url`) and the cluster's values are derived from its members.
 - **Adapters do not fetch.** `SourceAdapter` supplies an Accept header and `parse`; `IngestionService` performs the request, so size limits and conditional requests are applied in one place.
 - **The source catalogue is a package resource** at `Sources/Ingestion/Resources/sources.catalog.json`, not a top-level `Resources/` folder, so it is bundled without app-side configuration.
-- **No scheduler or rate limiter yet.** Refresh is on launch when stale and on demand, six sources at a time.
+- **Scheduling is a loop in the app model**, not `NSBackgroundActivityScheduler`: every five minutes it asks ingestion to refresh whatever is due. There is no per-host rate limiter; six sources are fetched at a time and no host appears more than twice in the catalogue.
 - **Views do not observe the database yet.** The app model reloads after a refresh.
 
 The repository was started as a general widget app. The brief makes it an intelligence platform with widgets as one surface. The existing code is kept, because a declarative spec with a bounded expression interpreter is exactly the "never execute generated code" design the brief requires. What changes is what widgets bind to (see [WIDGET_SYSTEM.md](WIDGET_SYSTEM.md)) and the order of work.

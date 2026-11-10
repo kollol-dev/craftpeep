@@ -7,12 +7,21 @@ public enum Normaliser {
     public static let titleLimit = 300
     public static let excerptLimit = 500
 
-    public static func normalise(_ items: [RawItem], source: Source, now: Date) -> [NewArticle] {
+    /// `maxAge` drops items published longer ago than that. Feeds often carry years of history;
+    /// storing it would only have the retention job delete it again.
+    public static func normalise(
+        _ items: [RawItem],
+        source: Source,
+        now: Date,
+        maxAge: TimeInterval? = nil
+    ) -> [NewArticle] {
+        let cutoff = maxAge.map { now.addingTimeInterval(-$0) }
         var seen = Set<String>()
         return items.compactMap { item in
             guard let article = normalise(item, source: source, now: now),
                   seen.insert(article.canonicalURL).inserted
             else { return nil }
+            if let cutoff, let published = article.publishedAt, published < cutoff { return nil }
             return article
         }
     }

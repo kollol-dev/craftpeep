@@ -14,6 +14,8 @@ public struct RefreshReport: Sendable, Equatable {
 /// Makes no AI calls. One source failing never stops the others.
 public actor IngestionService {
     public static let maxResponseBytes = 5 * 1024 * 1024
+    /// Articles published longer ago than this are not stored. Matches the retention period.
+    public static let maxArticleAge: TimeInterval = 90 * 24 * 3600
 
     private let sources: any SourceRepository
     private let articles: any ArticleRepository
@@ -39,19 +41,31 @@ public actor IngestionService {
         self.now = now
     }
 
-    /// Refreshes all enabled sources. A call made while a refresh is in flight joins that refresh.
+    /// Refreshes every enabled source now, whatever its schedule. For an explicit user request.
+    /// A call made while a refresh is in flight joins that refresh.
     public func refreshAll() async throws -> RefreshReport {
+        try await run(onlyDue: false)
+    }
+
+    /// Refreshes the enabled sources whose interval has elapsed. Failing sources back off.
+    /// Cheap to call often: when nothing is due it does no network work.
+    public func refreshDue() async throws -> RefreshReport {
+        try await run(onlyDue: true)
+    }
+
+    private func run(onlyDue: Bool) async throws -> RefreshReport {
         if let running { return try await running.value }
 
-        let task = Task { try await self.performRefresh() }
+        let task = Task { try await self.performRefresh(onlyDue: onlyDue) }
         running = task
         defer { running = nil }
         return try await task.value
     }
 
-    private func performRefresh() async throws -> RefreshReport {
+    private func performRefresh(onlyDue: Bool) async throws -> RefreshReport {
         let startedAt = now()
-        let pending = try await sources.enabledSources()
+        var pending = try await sources.enabledSources()
+        if onlyDue { pending = pending.filter { $0.isDue(at: startedAt) } }
 
         let outcomes = await withTaskGroup(of: FetchOutcome.self) { group in
             var collected: [FetchOutcome] = []
@@ -98,7 +112,7 @@ public actor IngestionService {
                 outcome.httpStatus = 304
             case .ok(let data, let validators):
                 let raw = try adapter.parse(data, source: source)
-                let cleaned = Normaliser.normalise(raw, source: source, now: started)
+                let cleaned = Normaliser.normalise(raw, source: source, now: started, maxAge: Self.maxArticleAge)
                 outcome.itemsNew = try await articles.upsert(cleaned)
                 outcome.status = .fetched
                 outcome.httpStatus = 200

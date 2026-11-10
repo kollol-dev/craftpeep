@@ -46,7 +46,8 @@ Major architecture changes, new dependencies, changing persistence, cloud servic
 
 ```sh
 cd Packages/CraftPeepKit && swift test                                   # all package tests
-cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveSmokeTests   # real network, checks the catalogue
+cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveSmokeTests        # real network, checks the catalogue
+cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveEvaluationTests   # real network, prints clusters and ranking
 xcodebuild -project App/CraftPeep/CraftPeep.xcodeproj -scheme CraftPeep -destination 'platform=macOS' -derivedDataPath build build
 ./scripts/build-dmg.sh                      # local unsigned DMG
 ```
@@ -60,5 +61,7 @@ Open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode to run the app.
 - Typed errors per layer. Background failures surface as per-source or per-feature status, not alerts.
 - British English in user-facing text and documentation.
 - New tests use Swift Testing; the widget suites remain XCTest.
+- Classification is rules first. When a rule misfires on real headlines, tighten the rule and add the headline as a test; do not add a model call.
+- Clustering changes must keep the labelled fixture at zero wrong merges; report the measured precision and recall.
 - Test fixtures are synthetic. Do not commit copies of real publishers' feeds.
 - The repository is open source: never commit keys, personal details or private feed URLs.

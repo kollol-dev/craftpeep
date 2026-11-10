@@ -8,7 +8,7 @@ let package = Package(
         .library(
             name: "CraftPeepKit",
             targets: [
-                "Domain", "Persistence", "Ingestion",
+                "Domain", "Persistence", "Ingestion", "Intelligence",
                 "WidgetSpec", "WidgetExpr", "WidgetRuntime", "WidgetRender"
             ]
         )
@@ -28,6 +28,11 @@ let package = Package(
             dependencies: ["Domain"],
             resources: [.process("Resources")]
         ),
+        .target(
+            name: "Intelligence",
+            dependencies: ["Domain"],
+            resources: [.process("Resources")]
+        ),
         .target(name: "WidgetSpec"),
         .target(name: "WidgetExpr"),
         .target(name: "WidgetRuntime", dependencies: ["WidgetSpec", "WidgetExpr"]),
@@ -39,6 +44,11 @@ let package = Package(
             dependencies: ["Ingestion", "Persistence", "Domain"],
             resources: [.copy("Fixtures")]
         ),
-        .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Domain"])
+        .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Domain"]),
+        .testTarget(
+            name: "IntelligenceTests",
+            dependencies: ["Intelligence", "Ingestion", "Persistence", "Domain"],
+            resources: [.copy("Fixtures")]
+        )
     ]
 )

@@ -6,6 +6,18 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Intelligence core (M3): `Intelligence` target.
+  - Story clustering by shared URL and by headline similarity across sources within 72 hours.
+  - Rule-based Hype Filter classification, recording which rule fired and a confidence band.
+  - Verification status from source tiers; company, technology and topic tagging.
+  - Ranking by named factors with human-readable reasons; interests and mutes.
+  - Schema v2: clusters, cluster entities, interests.
+- Due-based refresh with exponential backoff for failing sources, checked every five minutes.
+- Retention: articles older than 90 days are not stored and are removed; fetch log kept 14 days.
+- Catalogue grown from 17 to 34 verified sources.
+- App: Top and Latest views with one row per story, reasons for ranking, and a popover listing every source.
+- Opt-in live evaluation that prints clusters, labels and the ranked list from the real catalogue.
+
 - Ingestion slice (M2): `Domain`, `Persistence` and `Ingestion` targets.
   - RSS 2.0, RSS 1.0 and Atom parser; Hacker News adapter using the Algolia search API.
   - HTTPS-only client with conditional requests, no cookies, a 5 MB response cap and a 200-item cap per feed.

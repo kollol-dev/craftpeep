@@ -95,6 +95,45 @@ public final class AppDatabase: Sendable {
             }
         }
 
+        migrator.registerMigration("v2-clusters") { db in
+            try db.execute(sql: """
+                CREATE TABLE cluster (
+                  id              INTEGER PRIMARY KEY,
+                  headline        TEXT NOT NULL DEFAULT '',
+                  lead_article_id INTEGER REFERENCES article(id) ON DELETE SET NULL,
+                  first_seen_at   INTEGER NOT NULL,
+                  last_seen_at    INTEGER NOT NULL,
+                  member_count    INTEGER NOT NULL DEFAULT 0,
+                  source_count    INTEGER NOT NULL DEFAULT 0,
+                  independent_count INTEGER NOT NULL DEFAULT 0,
+                  best_tier       TEXT NOT NULL DEFAULT 'unverified',
+                  kind            TEXT,
+                  kind_basis      TEXT,
+                  kind_confidence TEXT,
+                  verification    TEXT NOT NULL DEFAULT 'unverified',
+                  score           INTEGER,
+                  comment_count   INTEGER
+                );
+                CREATE INDEX cluster_last_seen ON cluster(last_seen_at DESC);
+
+                ALTER TABLE article ADD COLUMN cluster_id INTEGER REFERENCES cluster(id) ON DELETE SET NULL;
+                CREATE INDEX article_cluster ON article(cluster_id);
+
+                CREATE TABLE cluster_entity (
+                  cluster_id INTEGER NOT NULL REFERENCES cluster(id) ON DELETE CASCADE,
+                  name       TEXT NOT NULL,
+                  kind       TEXT NOT NULL,
+                  PRIMARY KEY (cluster_id, name)
+                );
+                CREATE INDEX cluster_entity_name ON cluster_entity(name);
+
+                CREATE TABLE interest (
+                  keyword TEXT PRIMARY KEY COLLATE NOCASE,
+                  level   INTEGER NOT NULL
+                );
+                """)
+        }
+
         return migrator
     }
 }

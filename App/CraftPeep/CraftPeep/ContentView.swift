@@ -11,6 +11,15 @@ struct ContentView: View {
                 .navigationTitle("CraftPeep")
                 .searchable(text: $model.searchText, prompt: "Search stories")
                 .toolbar {
+                    ToolbarItem(placement: .principal) {
+                        Picker("Order", selection: $model.order) {
+                            ForEach(StoryOrder.allCases) { order in
+                                Text(order.rawValue).tag(order)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+                        .help("Top ranks the last three days by importance. Latest is newest first.")
+                    }
                     ToolbarItem(placement: .primaryAction) {
                         Button {
                             Task { await model.refresh() }
@@ -34,6 +43,9 @@ struct ContentView: View {
             guard !Task.isCancelled else { return }
             await model.reload()
         }
+        .onChange(of: model.order) {
+            Task { await model.reload() }
+        }
     }
 
     @ViewBuilder
@@ -55,8 +67,8 @@ struct ContentView: View {
                 }
             }
         } else {
-            List(model.stories) { story in
-                StoryRow(story: story)
+            List(model.stories) { item in
+                StoryRow(item: item, model: model)
             }
             .listStyle(.inset)
         }
@@ -88,7 +100,7 @@ struct ContentView: View {
 
     private var statusText: String {
         if let error = model.loadError { return error }
-        var parts = ["\(model.storyCount) stories from \(model.sources.count) sources"]
+        var parts = ["\(model.stories.count) stories from \(model.sources.count) sources"]
         if let updated = model.lastUpdated {
             parts.append("updated \(updated.formatted(.relative(presentation: .named)))")
         } else {
@@ -102,30 +114,54 @@ struct ContentView: View {
 }
 
 private struct StoryRow: View {
-    let story: Story
+    let item: StoryItem
+    let model: AppModel
     @Environment(\.openURL) private var openURL
+    @State private var showingCoverage = false
+
+    private var story: ClusterSummary { item.summary }
 
     var body: some View {
-        Button {
-            open(story.url)
-        } label: {
-            VStack(alignment: .leading, spacing: 3) {
-                Text(story.title)
-                    .font(.headline)
-                    .lineLimit(2)
-                if let excerpt = story.excerpt {
-                    Text(excerpt)
-                        .foregroundStyle(.secondary)
+        HStack(alignment: .top, spacing: 8) {
+            Button {
+                open(story.url)
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(story.headline)
+                        .font(.headline)
                         .lineLimit(2)
+                    if let excerpt = story.excerpt {
+                        Text(excerpt)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                    Text(metadata)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    if !item.reasons.isEmpty {
+                        Text(item.reasons.joined(separator: " · "))
+                            .font(.caption)
+                            .foregroundStyle(.tertiary)
+                    }
                 }
-                Text(metadata)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
+            .buttonStyle(.plain)
+            .accessibilityHint("Opens the article in your browser")
+
+            if story.memberCount > 1 {
+                Button("\(story.sourceCount) sources") {
+                    showingCoverage = true
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .help("Show every source reporting this story")
+                .popover(isPresented: $showingCoverage, arrowEdge: .trailing) {
+                    CoverageView(item: item, model: model)
+                }
+            }
         }
-        .buttonStyle(.plain)
         .padding(.vertical, 3)
         .contextMenu {
             Button("Open Article") { open(story.url) }
@@ -137,18 +173,17 @@ private struct StoryRow: View {
                 NSPasteboard.general.setString(story.url, forType: .string)
             }
         }
-        .accessibilityElement(children: .combine)
-        .accessibilityHint("Opens the article in your browser")
     }
 
     private var metadata: String {
-        var parts = [story.sourceName, story.sourceTier.label]
-        if let published = story.publishedAt {
-            parts.append(published.formatted(.relative(presentation: .named)))
-        } else {
-            // The source gave no date. Say what we do know, not a guess.
-            parts.append("first seen \(story.retrievedAt.formatted(.relative(presentation: .named)))")
+        var parts: [String] = []
+        if let kind = story.kind {
+            parts.append(kind.label)
         }
+        let names = story.sourceNames
+        parts.append(names.count > 2 ? "\(names[0]), \(names[1]) +\(names.count - 2)" : names.joined(separator: ", "))
+        parts.append(story.verification.label)
+        parts.append(story.lastSeenAt.formatted(.relative(presentation: .named)))
         if let score = story.score {
             parts.append("\(score) points")
         }
@@ -158,11 +193,59 @@ private struct StoryRow: View {
         return parts.joined(separator: " · ")
     }
 
-    /// Stored links are already limited to the web; check again at the point of use.
     private func open(_ string: String) {
-        guard let url = URL(string: string), let scheme = url.scheme?.lowercased(),
-              scheme == "https" || scheme == "http" else { return }
-        openURL(url)
+        openWebLink(string, with: openURL)
+    }
+}
+
+/// Stored links are already limited to the web; check again at the point of use.
+private func openWebLink(_ string: String, with openURL: OpenURLAction) {
+    guard let url = URL(string: string), let scheme = url.scheme?.lowercased(),
+          scheme == "https" || scheme == "http" else { return }
+    openURL(url)
+}
+
+private struct CoverageView: View {
+    let item: StoryItem
+    let model: AppModel
+    @State private var members: [Story] = []
+    @Environment(\.openURL) private var openURL
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            if let kind = item.summary.kind {
+                Text("\(kind.label) · \(basisText)")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(members) { member in
+                Button {
+                    openWebLink(member.url, with: openURL)
+                } label: {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(member.title)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                        Text("\(member.sourceName) · \(member.sourceTier.label) · \(member.effectiveDate.formatted(.relative(presentation: .named)))")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+            }
+        }
+        .padding(14)
+        .frame(width: 380, alignment: .leading)
+        .task { members = await model.coverage(of: item) }
+    }
+
+    /// Says how the label was reached, so it can be questioned.
+    private var basisText: String {
+        let confidence = item.summary.kindConfidence.map { "\($0.rawValue) confidence" } ?? ""
+        let basis = item.summary.kindBasis?.hasPrefix("rule:") == true ? "labelled by rule" : "labelled by model"
+        return [basis, confidence].filter { !$0.isEmpty }.joined(separator: ", ")
     }
 }
 
@@ -201,6 +284,32 @@ extension SourceTier {
         case .analysis: "Analysis"
         case .community: "Community"
         case .unverified: "Unverified"
+        }
+    }
+}
+
+extension StoryKind {
+    var label: String {
+        switch self {
+        case .shipping: "Shipping"
+        case .announcement: "Announcement"
+        case .research: "Research"
+        case .benchmark: "Benchmark"
+        case .funding: "Funding / M&A"
+        case .partnership: "Partnership"
+        case .speculation: "Speculation"
+        case .unverifiedClaim: "Unverified claim"
+        }
+    }
+}
+
+extension Verification {
+    var label: String {
+        switch self {
+        case .official: "Official"
+        case .corroborated: "Corroborated"
+        case .singleSource: "Single source"
+        case .unverified: "Community only"
         }
     }
 }

@@ -1,0 +1,78 @@
+{
+  "note": "Synthetic headlines with hand-assigned story groups. Companies and products are invented. Items sharing a group are the same story; everything else must stay apart. Groups 11 and 12 are same-story pairs with little wording in common, kept to keep the recall figure honest.",
+  "headlines": [
+    { "group": 1, "source": 1, "hoursAgo": 5, "title": "Northwind unveils Orion 3, its most capable reasoning model yet" },
+    { "group": 1, "source": 2, "hoursAgo": 4, "title": "Northwind's Orion 3 model arrives with stronger reasoning and lower prices" },
+    { "group": 1, "source": 3, "hoursAgo": 4, "title": "Orion 3: Northwind launches new flagship reasoning model" },
+
+    { "group": 2, "source": 2, "hoursAgo": 20, "title": "Helix to acquire database startup Quartzline for $2.1bn" },
+    { "group": 2, "source": 3, "hoursAgo": 19, "title": "Helix is buying Quartzline, the database startup, in $2.1 billion deal" },
+    { "group": 2, "source": 4, "hoursAgo": 18, "title": "Helix acquires Quartzline for $2.1B to bolster database business" },
+
+    { "group": 3, "source": 2, "hoursAgo": 30, "title": "Major Stratus Cloud outage takes down thousands of websites" },
+    { "group": 3, "source": 4, "hoursAgo": 29, "title": "Stratus Cloud outage knocks thousands of sites offline for hours" },
+    { "group": 3, "source": 5, "hoursAgo": 29, "title": "Thousands of websites down after Stratus Cloud outage" },
+
+    { "group": 4, "source": 1, "hoursAgo": 10, "title": "Tessera announces Vega X chip built on 2nm process" },
+    { "group": 4, "source": 3, "hoursAgo": 9, "title": "Tessera's Vega X processor is its first on a 2nm process" },
+
+    { "group": 5, "source": 2, "hoursAgo": 40, "title": "Regulators sue Lumen Social over teen privacy violations" },
+    { "group": 5, "source": 4, "hoursAgo": 39, "title": "Lumen Social sued by regulators over alleged teen privacy violations" },
+    { "group": 5, "source": 5, "hoursAgo": 38, "title": "Lumen Social faces regulators' lawsuit over teen privacy" },
+
+    { "group": 6, "source": 1, "hoursAgo": 12, "title": "Kestrel 2.0 released with a rewritten query planner" },
+    { "group": 6, "source": 6, "hoursAgo": 11, "title": "Kestrel 2.0 is out: rewritten query planner, faster joins" },
+
+    { "group": 7, "source": 3, "hoursAgo": 50, "title": "Brightpath lays off 1,200 employees in restructuring" },
+    { "group": 7, "source": 5, "hoursAgo": 49, "title": "Brightpath to cut 1,200 jobs as part of restructuring" },
+
+    { "group": 8, "source": 2, "hoursAgo": 26, "title": "Robotics startup Ferrolabs raises $400M Series C led by Summit Peak" },
+    { "group": 8, "source": 4, "hoursAgo": 25, "title": "Ferrolabs raises $400M in Series C to scale warehouse robots" },
+
+    { "group": 9, "source": 3, "hoursAgo": 8, "title": "Critical vulnerability in OpenGate VPN is being actively exploited" },
+    { "group": 9, "source": 4, "hoursAgo": 7, "title": "Attackers are exploiting a critical OpenGate VPN vulnerability" },
+    { "group": 9, "source": 6, "hoursAgo": 7, "title": "OpenGate VPN critical vulnerability exploited in the wild" },
+
+    { "group": 10, "source": 2, "hoursAgo": 15, "title": "Pebblefone 12 review: a brilliant camera in a familiar body" },
+    { "group": 10, "source": 5, "hoursAgo": 14, "title": "Pebblefone 12 hands-on: brilliant camera, familiar design" },
+
+    { "group": 11, "source": 4, "hoursAgo": 33, "title": "Northwind targets $90bn valuation in stock market listing" },
+    { "group": 11, "source": 2, "hoursAgo": 32, "title": "Northwind sets IPO price range at $40 to $44 a share" },
+
+    { "group": 12, "source": 1, "hoursAgo": 22, "title": "Stratus Cloud blames configuration error for Tuesday's outage" },
+    { "group": 12, "source": 6, "hoursAgo": 21, "title": "Root cause of the Stratus incident: a bad config push" },
+
+    { "group": 20, "source": 1, "hoursAgo": 3, "title": "Northwind unveils Orion 3 Mini for mobile devices" },
+    { "group": 21, "source": 3, "hoursAgo": 17, "title": "Helix to acquire observability startup Tracewell for $300m" },
+    { "group": 22, "source": 2, "hoursAgo": 6, "title": "Stratus Cloud launches new region in Madrid" },
+    { "group": 23, "source": 6, "hoursAgo": 2, "title": "Kestrel 2.1 released with vector search" },
+    { "group": 24, "source": 3, "hoursAgo": 13, "title": "Tessera reports record quarterly revenue on data centre demand" },
+    { "group": 25, "source": 1, "hoursAgo": 36, "title": "Lumen Social launches teen accounts with stricter privacy defaults" },
+    { "group": 26, "source": 4, "hoursAgo": 45, "title": "Brightpath hires 300 engineers for new AI lab" },
+    { "group": 27, "source": 5, "hoursAgo": 9, "title": "Critical vulnerability found in ClosedGate firewall firmware" },
+    { "group": 28, "source": 6, "hoursAgo": 60, "title": "This Week in Rustacean: issue 601" },
+    { "group": 29, "source": 6, "hoursAgo": 1, "title": "This Week in Rustacean: issue 602" },
+    { "group": 30, "source": 5, "hoursAgo": 300, "title": "Major Stratus Cloud outage takes down thousands of websites" },
+    { "group": 31, "source": 2, "hoursAgo": 16, "title": "Pebblefone 12 Pro leak shows a redesigned camera bump" },
+    { "group": 32, "source": 3, "hoursAgo": 27, "title": "Ferrolabs opens second factory to build warehouse robots" },
+
+    { "group": 40, "source": 1, "hoursAgo": 5, "title": "How we cut our build times in half with remote caching" },
+    { "group": 41, "source": 2, "hoursAgo": 7, "title": "The case against microservices for small teams" },
+    { "group": 42, "source": 3, "hoursAgo": 11, "title": "A visual guide to how transformers attend" },
+    { "group": 43, "source": 4, "hoursAgo": 14, "title": "City council votes to ban facial recognition in public housing" },
+    { "group": 44, "source": 5, "hoursAgo": 18, "title": "Why SQLite is faster than you think for write-heavy workloads" },
+    { "group": 45, "source": 6, "hoursAgo": 21, "title": "Show HN: A terminal file manager written in Zig" },
+    { "group": 46, "source": 1, "hoursAgo": 24, "title": "Electric ferry completes first crossing of the North Sea" },
+    { "group": 47, "source": 2, "hoursAgo": 28, "title": "New battery chemistry promises ten-minute charging" },
+    { "group": 48, "source": 3, "hoursAgo": 31, "title": "The quiet death of the headphone jack, ten years on" },
+    { "group": 49, "source": 4, "hoursAgo": 35, "title": "Streaming service Vistaplay raises prices for the third time" },
+    { "group": 50, "source": 5, "hoursAgo": 41, "title": "Lessons from migrating two million lines of code to a monorepo" },
+    { "group": 51, "source": 6, "hoursAgo": 44, "title": "Ask HN: What are you using for local model inference?" },
+    { "group": 52, "source": 1, "hoursAgo": 47, "title": "Satellite internet provider Skylattice expands coverage to the Arctic" },
+    { "group": 53, "source": 2, "hoursAgo": 52, "title": "Court rules that scraping public profiles is not hacking" },
+    { "group": 54, "source": 3, "hoursAgo": 55, "title": "A new approach to incremental garbage collection" },
+    { "group": 55, "source": 4, "hoursAgo": 58, "title": "Smart thermostat maker Emberly recalls 400,000 devices" },
+    { "group": 56, "source": 5, "hoursAgo": 62, "title": "What the latest browser engine benchmarks actually measure" },
+    { "group": 57, "source": 6, "hoursAgo": 66, "title": "Open-source office suite Folio reaches version 10" }
+  ]
+}

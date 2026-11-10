@@ -45,6 +45,12 @@ public struct GRDBSourceRepository: SourceRepository {
         }
     }
 
+    public func setEnabled(_ enabled: Bool, sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET enabled = ? WHERE id = ?", arguments: [enabled, sourceID])
+        }
+    }
+
     public func record(_ outcome: FetchOutcome) async throws {
         try await database.writer.write { db in
             let at = outcome.at.unixSeconds
@@ -202,7 +208,7 @@ public struct GRDBArticleRepository: ArticleRepository {
         }
     }
 
-    private static func story(_ row: Row) -> Story {
+    static func story(_ row: Row) -> Story {
         let published: Int64? = row["published_at"]
         let retrieved: Int64 = row["retrieved_at"]
         return Story(

@@ -56,6 +56,7 @@ public protocol SourceRepository: Sendable {
     func seed(_ definitions: [SourceDefinition]) async throws -> Int
     func allSources() async throws -> [Source]
     func enabledSources() async throws -> [Source]
+    func setEnabled(_ enabled: Bool, sourceID: Int64) async throws
     /// Updates the source's health fields and appends to the fetch log.
     func record(_ outcome: FetchOutcome) async throws
 }
