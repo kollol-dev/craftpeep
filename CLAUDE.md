@@ -50,6 +50,7 @@ cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveSmokeTests 
 cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveEvaluationTests   # real network, prints clusters and ranking
 xcodebuild -project App/CraftPeep/CraftPeep.xcodeproj -scheme CraftPeep -destination 'platform=macOS' -derivedDataPath build build
 ./scripts/build-dmg.sh                      # local unsigned DMG
+open --env CRAFTPEEP_SNAPSHOT=overview,select,panels build/Build/Products/Debug/CraftPeep.app   # debug build photographs its own windows
 ```
 
 Open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode to run the app.
@@ -64,4 +65,6 @@ Open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode to run the app.
 - Classification is rules first. When a rule misfires on real headlines, tighten the rule and add the headline as a test; do not add a model call.
 - Clustering changes must keep the labelled fixture at zero wrong merges; report the measured precision and recall.
 - Test fixtures are synthetic. Do not commit copies of real publishers' feeds.
+- To check UI without screen access, use the snapshot mode above; PNGs land in the app container under `Application Support/CraftPeep/snapshots`. Sidebar and toolbar chrome come out blank.
+- App builds can take several minutes; run `xcodebuild` in the background.
 - The repository is open source: never commit keys, personal details or private feed URLs.

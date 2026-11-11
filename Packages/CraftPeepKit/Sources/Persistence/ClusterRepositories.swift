@@ -119,14 +119,16 @@ public struct GRDBClusterRepository: ClusterRepository {
         }
     }
 
-    public func summaries(since date: Date, matching query: String?) async throws -> [ClusterSummary] {
-        let pattern = query.flatMap(FTS5Pattern.init(matchingAllPrefixesIn:))
-        let wantsSearch = !(query ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    public func summaries(_ filter: StoryFilter) async throws -> [ClusterSummary] {
+        let pattern = filter.query.flatMap(FTS5Pattern.init(matchingAllPrefixesIn:))
+        let wantsSearch = !(filter.query ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if wantsSearch && pattern == nil { return [] }
+        if let kinds = filter.kinds, kinds.isEmpty { return [] }
 
         return try await database.writer.read { db in
             var sql = """
                 SELECT c.*, la.url AS lead_url, la.excerpt AS lead_excerpt,
+                  st.read_at, st.saved_at, COALESCE(st.favourite, 0) AS favourite,
                   (SELECT group_concat(name, char(31)) FROM
                      (SELECT DISTINCT s.name AS name FROM article a JOIN source s ON s.id = a.source_id
                       WHERE a.cluster_id = c.id ORDER BY s.name)) AS source_names,
@@ -136,9 +138,36 @@ public struct GRDBClusterRepository: ClusterRepository {
                    WHERE a.cluster_id = c.id AND a.discussion_url IS NOT NULL
                    ORDER BY a.score DESC LIMIT 1) AS discussion_url
                 FROM cluster c JOIN article la ON la.id = c.lead_article_id
+                LEFT JOIN cluster_state st ON st.cluster_id = c.id
                 WHERE c.last_seen_at >= ?
                 """
-            var arguments: StatementArguments = [date.unixSeconds]
+            var arguments: StatementArguments = [filter.since.unixSeconds]
+            if filter.keptOnly {
+                sql += " AND (st.saved_at IS NOT NULL OR st.favourite = 1)"
+            }
+            if let kinds = filter.kinds {
+                sql += " AND c.kind IN (\(databaseQuestionMarks(count: kinds.count)))"
+                arguments += StatementArguments(kinds.map(\.rawValue).sorted())
+            }
+            if let subject = filter.subject {
+                var alternatives: [String] = []
+                if !subject.entityNames.isEmpty {
+                    alternatives.append("""
+                        EXISTS (SELECT 1 FROM cluster_entity e WHERE e.cluster_id = c.id
+                                AND e.name IN (\(databaseQuestionMarks(count: subject.entityNames.count))))
+                        """)
+                    arguments += StatementArguments(subject.entityNames)
+                }
+                if let topic = subject.sourceTopic {
+                    // topics is a JSON array of plain words; its first element is the source's main subject.
+                    alternatives.append("""
+                        EXISTS (SELECT 1 FROM article a JOIN source s ON s.id = a.source_id
+                                WHERE a.cluster_id = c.id AND s.topics LIKE ?)
+                        """)
+                    arguments += ["[\"" + topic.filter { $0.isLetter || $0.isNumber } + "\"%"]
+                }
+                sql += alternatives.isEmpty ? " AND 0" : " AND (" + alternatives.joined(separator: " OR ") + ")"
+            }
             if let pattern {
                 sql += """
                      AND c.id IN (SELECT a.cluster_id FROM article a
@@ -172,13 +201,55 @@ public struct GRDBClusterRepository: ClusterRepository {
     public func purge(articlesBefore: Date, logsBefore: Date) async throws -> Int {
         try await database.writer.write { db in
             try db.execute(
-                sql: "DELETE FROM article WHERE COALESCE(published_at, retrieved_at) < ?",
+                sql: """
+                    DELETE FROM article
+                    WHERE COALESCE(published_at, retrieved_at) < ?
+                      AND (cluster_id IS NULL OR cluster_id NOT IN
+                           (SELECT cluster_id FROM cluster_state WHERE saved_at IS NOT NULL OR favourite = 1))
+                    """,
                 arguments: [articlesBefore.unixSeconds]
             )
             let removed = db.changesCount
             try db.execute(sql: "DELETE FROM cluster WHERE id NOT IN (SELECT DISTINCT cluster_id FROM article WHERE cluster_id IS NOT NULL)")
             try db.execute(sql: "DELETE FROM fetch_log WHERE at < ?", arguments: [logsBefore.unixSeconds])
             return removed
+        }
+    }
+
+    public func setRead(_ read: Bool, clusterID: Int64, at now: Date) async throws {
+        try await setState(clusterID: clusterID, column: "read_at", value: read ? now.unixSeconds : nil)
+    }
+
+    public func setSaved(_ saved: Bool, clusterID: Int64, at now: Date) async throws {
+        try await setState(clusterID: clusterID, column: "saved_at", value: saved ? now.unixSeconds : nil)
+    }
+
+    public func setFavourite(_ favourite: Bool, clusterID: Int64) async throws {
+        try await setState(clusterID: clusterID, column: "favourite", value: favourite ? 1 : 0)
+    }
+
+    /// `column` is one of three literals above, never caller input.
+    private func setState(clusterID: Int64, column: String, value: Int64?) async throws {
+        try await database.writer.write { db in
+            try db.execute(
+                sql: """
+                    INSERT INTO cluster_state (cluster_id, \(column)) VALUES (?, ?)
+                    ON CONFLICT(cluster_id) DO UPDATE SET \(column) = excluded.\(column)
+                    """,
+                arguments: [clusterID, value]
+            )
+        }
+    }
+
+    public func clustersNeedingRepair() async throws -> Set<Int64> {
+        try await database.writer.write { db in
+            try db.execute(sql: "DELETE FROM cluster WHERE id NOT IN (SELECT DISTINCT cluster_id FROM article WHERE cluster_id IS NOT NULL)")
+            let ids = try Int64.fetchAll(db, sql: """
+                SELECT c.id FROM cluster c
+                WHERE c.lead_article_id IS NULL
+                   OR c.member_count <> (SELECT COUNT(*) FROM article a WHERE a.cluster_id = c.id)
+                """)
+            return Set(ids)
         }
     }
 
@@ -227,7 +298,10 @@ public struct GRDBClusterRepository: ClusterRepository {
             verification: Verification(rawValue: row["verification"]) ?? .unverified,
             score: row["score"],
             commentCount: row["comment_count"],
-            entities: list("entity_names")
+            entities: list("entity_names"),
+            readAt: (row["read_at"] as Int64?).map(Date.init(unixSeconds:)),
+            savedAt: (row["saved_at"] as Int64?).map(Date.init(unixSeconds:)),
+            isFavourite: (row["favourite"] as Int64) == 1
         )
     }
 }

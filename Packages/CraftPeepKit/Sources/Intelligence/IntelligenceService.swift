@@ -51,6 +51,9 @@ public struct IntelligenceService: Sendable {
             logsBefore: current.addingTimeInterval(-Self.logRetention)
         )
 
+        // Removing a source can leave clusters with stale facts or no members.
+        try await rederive(try await clusters.clustersNeedingRepair())
+
         let pending = try await clusters.unclusteredArticles()
         guard let earliest = pending.map(\.date).min() else { return report }
 
@@ -86,14 +89,22 @@ public struct IntelligenceService: Sendable {
 
     /// Stories from the given period, most important first, with the reasons for their position.
     public func rankedStories(since date: Date, matching query: String? = nil, limit: Int) async throws -> [RankedStory] {
-        let summaries = try await clusters.summaries(since: date, matching: query)
+        try await rankedStories(StoryFilter(since: date, query: query), limit: limit)
+    }
+
+    public func latestStories(since date: Date, matching query: String? = nil, limit: Int) async throws -> [RankedStory] {
+        try await latestStories(StoryFilter(since: date, query: query), limit: limit)
+    }
+
+    public func rankedStories(_ filter: StoryFilter, limit: Int) async throws -> [RankedStory] {
+        let summaries = try await clusters.summaries(filter)
         let ranked = ranker.rank(summaries, interests: try await interests.allInterests(), now: now())
         return Array(ranked.prefix(limit))
     }
 
     /// Stories from the given period, newest first. Muted stories are still left out.
-    public func latestStories(since date: Date, matching query: String? = nil, limit: Int) async throws -> [RankedStory] {
-        let summaries = try await clusters.summaries(since: date, matching: query)
+    public func latestStories(_ filter: StoryFilter, limit: Int) async throws -> [RankedStory] {
+        let summaries = try await clusters.summaries(filter)
         let userInterests = try await interests.allInterests()
         let current = now()
         return Array(summaries.lazy.compactMap { ranker.rank($0, interests: userInterests, now: current) }.prefix(limit))

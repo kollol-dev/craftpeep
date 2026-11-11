@@ -51,6 +51,29 @@ public struct GRDBSourceRepository: SourceRepository {
         }
     }
 
+    public func addUserSource(_ definition: SourceDefinition) async throws -> Bool {
+        try await database.writer.write { db in
+            let topics = String(decoding: try JSONEncoder().encode(definition.topics), as: UTF8.self)
+            try db.execute(
+                sql: """
+                    INSERT OR IGNORE INTO source (kind, name, url, site_url, tier, tier_origin, topics, refresh_secs)
+                    VALUES (?, ?, ?, ?, ?, 'user', ?, ?)
+                    """,
+                arguments: [
+                    definition.kind.rawValue, definition.name, definition.url, definition.siteURL,
+                    definition.tier.rawValue, topics, definition.refreshSeconds
+                ]
+            )
+            return db.changesCount == 1
+        }
+    }
+
+    public func delete(sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "DELETE FROM source WHERE id = ?", arguments: [sourceID])
+        }
+    }
+
     public func record(_ outcome: FetchOutcome) async throws {
         try await database.writer.write { db in
             let at = outcome.at.unixSeconds
@@ -117,7 +140,8 @@ public struct GRDBSourceRepository: SourceRepository {
             lastFetchAt: lastFetch.map(Date.init(unixSeconds:)),
             lastOKAt: lastOK.map(Date.init(unixSeconds:)),
             failCount: row["fail_count"],
-            lastError: row["last_error"]
+            lastError: row["last_error"],
+            isUserAdded: (row["tier_origin"] as String) == "user"
         )
     }
 }

@@ -9,12 +9,12 @@ Status: accepted direction, 10 November 2026. Describes the target; see "Current
 | `Packages/CraftPeepKit` targets `Domain`, `Persistence`, `Ingestion`, `Intelligence` | Ingestion (M2) and clustering, classification, tagging, ranking (M3). 80 tests. |
 | `WidgetSpec` (Codable models, loader, validation) and `WidgetExpr` (lexer, parser, interpreter, 20 functions, templates) | 59 tests. Not yet connected to the app. |
 | `WidgetRuntime`, `WidgetRender` | Empty placeholder targets. |
-| `App/CraftPeep` | Sandboxed app: ranked and latest story lists, one row per story, search, per-story source list, source health. |
+| `App/CraftPeep` | Sandboxed app: three-pane reader, story detail, Settings, menu bar item. `App/` holds composition and the one `AppModel`; `Features/`, `MenuBar/` and `DesignSystem/` hold views. |
 | `Docs/SPEC.md`, `Schema/widget.schema.json`, three example widgets | Spec v0.1 draft. |
 
 ### Implemented so far, and where it differs from the target below
 
-- **Schema is at v2:** v1 has `source`, `article`, `article_fts`, `fetch_log`; v2 adds `cluster`, `article.cluster_id`, `cluster_entity`, `interest`. User state, summaries, briefings, AI usage and widget instances arrive as later migrations with the code that uses them.
+- **Schema is at v4:** v3 adds `cluster_state` (read, saved, favourite); v4 is a data fix for future-dated articles. Earlier: v1 has `source`, `article`, `article_fts`, `fetch_log`; v2 adds `cluster`, `article.cluster_id`, `cluster_entity`, `interest`. User state, summaries, briefings, AI usage and widget instances arrive as later migrations with the code that uses them.
 - **No `entity` table.** Entities come from the bundled rules file, so `cluster_entity` stores the name and kind directly. A table of entities becomes worthwhile when users can add their own.
 - **`cluster.independent_count`** was added to the design: sources doing their own reporting, excluding community aggregators. Ranking uses it so that a Hacker News link to an article does not count as a second report.
 - **No `title_sig` column.** Headlines are tokenised in memory at clustering time; a few thousand per run takes milliseconds.

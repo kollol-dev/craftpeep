@@ -31,7 +31,7 @@ struct LiveEvaluationTests {
         let duration = try await clock.measure { report = try await service.process() }
         print("EVAL \(refresh.newArticles) articles, \(refresh.failures) failed sources; \(report.clustersCreated) clusters in \(duration)")
 
-        let all = try await clusters.summaries(since: .distantPast, matching: nil)
+        let all = try await clusters.summaries(StoryFilter())
         print("EVAL --- multi-source clusters")
         for cluster in all where cluster.sourceCount > 1 {
             print("EVAL [\(cluster.sourceCount)] \(cluster.headline)")

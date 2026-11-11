@@ -134,6 +134,24 @@ public final class AppDatabase: Sendable {
                 """)
         }
 
+        migrator.registerMigration("v3-user-state") { db in
+            // Kept apart from content so that a future sync moves this small table, not the corpus.
+            try db.execute(sql: """
+                CREATE TABLE cluster_state (
+                  cluster_id INTEGER PRIMARY KEY REFERENCES cluster(id) ON DELETE CASCADE,
+                  read_at    INTEGER,
+                  saved_at   INTEGER,
+                  favourite  INTEGER NOT NULL DEFAULT 0
+                );
+                """)
+        }
+
+        migrator.registerMigration("v4-future-dates") { db in
+            // Earlier builds accepted publication dates up to a day ahead, which showed as "in 18 hours"
+            // and ranked as brand new. Such dates are now treated as missing.
+            try db.execute(sql: "UPDATE article SET published_at = NULL WHERE published_at > retrieved_at + 300")
+        }
+
         return migrator
     }
 }

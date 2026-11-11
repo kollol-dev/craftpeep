@@ -52,6 +52,8 @@ public struct Source: Sendable, Equatable, Identifiable {
     public var lastOKAt: Date?
     public var failCount: Int
     public var lastError: String?
+    /// Added by the user rather than shipped in the catalogue.
+    public var isUserAdded: Bool
 
     public init(
         id: Int64,
@@ -67,8 +69,10 @@ public struct Source: Sendable, Equatable, Identifiable {
         lastFetchAt: Date? = nil,
         lastOKAt: Date? = nil,
         failCount: Int = 0,
-        lastError: String? = nil
+        lastError: String? = nil,
+        isUserAdded: Bool = false
     ) {
+        self.isUserAdded = isUserAdded
         self.id = id
         self.kind = kind
         self.name = name

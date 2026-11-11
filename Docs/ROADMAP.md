@@ -79,20 +79,45 @@ Known limits carried forward:
 - A cluster is not recomputed when one of its sources is deleted; there is no way to delete a source yet.
 - Most stories have no kind. Raising coverage needs either many more rules or the optional model pass planned for v0.2.
 
-### M4 Intelligence experience (v0.1 release candidate)
+### M4 Intelligence experience (v0.1 release candidate) — split into three
 
-- [ ] Design system: type scale, spacing, tokens, row and card components, three densities
-- [ ] Navigation: Overview, AI Intelligence, Technology News, Saved, Settings
-- [ ] Story detail, read state, read later, favourites, search
-- [ ] Source management UI with health
-- [ ] `AI` target: provider protocol, Anthropic and OpenAI-compatible clients, Keychain, ledger, budget
-- [ ] Cluster summaries; morning briefing with the non-AI digest fallback
-- [ ] Menu bar Pulse; menu bar agent mode; launch at login
-- [ ] Interests and mutes editor
-- [ ] Widget slice: spec 0.2 `query` source, `WidgetRuntime`, `WidgetRender` for News List, one desktop-level panel with persisted position
-- [ ] Accessibility pass; performance budgets measured
+M4 was too large to build and check as one piece, so it is split. The first part is done.
 
-Done when: the v0.1 acceptance criteria in PRODUCT_REQUIREMENTS.md hold, and I have used it every weekday for two weeks. Changes from that fortnight take priority over M5.
+#### M4a Reading experience — complete
+
+- [x] Three-pane window: sidebar (Overview, AI Intelligence, Technology News, Saved), story list, story detail
+- [x] Story detail: every source with tier and time, support level, kind with the rule that produced it, timeline, ranking reasons
+- [x] Read state, Read Later, Favourite; saved stories are exempt from clean-up
+- [x] Search within a section; filter by kind
+- [x] Overview header: a plain count of the last day (not AI)
+- [x] Settings: story row density, menu bar item, open at login, sources (switch off, add a feed, remove an added feed, health), interests and mutes
+- [x] Menu bar item with unread count of the top 20 stories, five unread stories, refresh, open app
+- [x] Keyboard: Cmd-1 to 4 for sections, Return to open, Cmd-D Read Later, Shift-Cmd-D Favourite, Cmd-U mark unread, Cmd-R refresh
+- [x] Fix: publication dates in the future are treated as missing (a feed's scheduled posts had shown as "in 18 hours" and ranked as new)
+
+Checked on 11 November 2026: 150 package tests pass. The app photographs its own windows in a debug mode, and from those pictures the story list, detail pane, Overview header, Settings tabs and menu bar panel were inspected. Not checked: the sidebar and toolbar buttons (translucent chrome comes out blank in the self-capture), keyboard shortcuts, VoiceOver, open at login, and adding a feed through the UI.
+
+Not done from the original M4a intent, and why:
+
+- A separate `DesignSystem` package target. The shared styles are one small file in the app; a target would be ceremony.
+- Hiding the Dock icon when only the menu bar is in use. The app keeps running with its window closed, which is the part that matters for refresh.
+- Source priority ordering. Interests already do this job per topic.
+
+#### M4b AI layer — next
+
+- [ ] `AI` target: provider protocol, Anthropic and OpenAI-compatible clients, Keychain, usage ledger, budget
+- [ ] Cluster summaries, cached by content
+- [ ] Morning briefing, with the current Overview count as the fallback when AI is off
+- [ ] AI settings pane with disclosure of what is sent
+
+#### M4c First widget
+
+- [ ] Spec 0.2 `query` source, `WidgetRuntime`, `WidgetRender` for News List, one desktop-level panel with persisted position
+
+#### Before calling it v0.1
+
+- [ ] Accessibility pass with VoiceOver; performance budgets measured
+- [ ] Two weeks of daily use; changes from that fortnight take priority over M5
 
 ### M5 Extended data (v0.2, part 1)
 

@@ -1,7 +1,7 @@
 {
   "kindRules": [
     { "id": "research-host", "kind": "research", "confidence": "high",
-      "hosts": ["arxiv.org", "openreview.net", "aclanthology.org", "biorxiv.org", "nature.com", "science.org"] },
+      "hosts": ["arxiv.org", "openreview.net", "aclanthology.org", "biorxiv.org"] },
 
     { "id": "github-release", "kind": "shipping", "confidence": "high",
       "hosts": ["github.com"], "urlContains": ["/releases"] },

@@ -48,6 +48,17 @@ import Testing
         #expect(forced.outcomes.count == 3)
     }
 
+    @Test func futureDatesAreTreatedAsMissing() throws {
+        let source = makeSource()
+        func published(_ offset: TimeInterval) -> Date? {
+            let raw = RawItem(url: "https://example.com/a", title: "A", publishedAt: testNow.addingTimeInterval(offset))
+            return Normaliser.normalise(raw, source: source, now: testNow)?.publishedAt
+        }
+        #expect(published(-60) != nil)
+        #expect(published(120) != nil)        // clock skew
+        #expect(published(18 * 3600) == nil)  // a scheduled post dated tomorrow
+    }
+
     @Test func itemsOlderThanTheRetentionPeriodAreNotStored() {
         let source = makeSource()
         let raw = [

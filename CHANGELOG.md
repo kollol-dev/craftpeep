@@ -6,6 +6,21 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Reading experience (M4a).
+  - Three-pane window with Overview, AI Intelligence, Technology News and Saved.
+  - Story detail showing every source, support level, the rule behind a label, and ranking reasons.
+  - Read state, Read Later and Favourite; saved stories are never cleaned up. Schema v3.
+  - Filter by kind; search within a section.
+  - Settings: row density, menu bar item, open at login, sources (switch off, add, remove, health), interests and mutes.
+  - Menu bar item with an unread count and the top unread stories.
+  - Debug-only helper that lets the app photograph its own windows for UI checks.
+
+### Fixed
+
+- Publication dates in the future are now treated as missing. Scheduled posts in one feed had shown as "in 18 hours" and ranked as brand new. Schema v4 corrects stored rows.
+
+### Added earlier
+
 - Intelligence core (M3): `Intelligence` target.
   - Story clustering by shared URL and by headline similarity across sources within 72 hours.
   - Rule-based Hype Filter classification, recording which rule fired and a confidence band.

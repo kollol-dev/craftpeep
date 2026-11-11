@@ -63,12 +63,13 @@ public enum Normaliser {
         )
     }
 
-    /// A date well in the future or before the web existed is a feed bug. Treat it as missing
-    /// rather than guess.
+    /// A date in the future or before the web existed is a feed bug or a scheduled post. Treat it as
+    /// missing rather than guess; the article then sorts by when it was first seen. A few minutes of
+    /// slack allows for clocks that disagree.
     static func plausible(_ date: Date?, now: Date) -> Date? {
         guard let date else { return nil }
         let earliest = Date(timeIntervalSince1970: 788_918_400) // 1 January 1995
-        guard date >= earliest, date <= now.addingTimeInterval(86_400) else { return nil }
+        guard date >= earliest, date <= now.addingTimeInterval(300) else { return nil }
         return date
     }
 

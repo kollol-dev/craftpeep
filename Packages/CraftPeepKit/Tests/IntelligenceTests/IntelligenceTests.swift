@@ -210,6 +210,12 @@ func digest(
         #expect(kind(headline) == nil)
     }
 
+    @Test func journalNewsPagesAreNotResearchByHostAlone() {
+        // Journals also publish news. Only preprint and proceedings hosts imply a paper.
+        #expect(kind("To deter bioterrorism, U.S. imposes new rules on ordering DNA", url: "https://www.science.org/content/article/x", tier: .community) == nil)
+        #expect(kind("A new result", url: "https://www.nature.com/articles/d41586-026-00000-0", tier: .community) == nil)
+    }
+
     @Test func phrasesMatchWholeWordsOnly() {
         #expect(kind("Unreleased prototype spotted") == nil)       // not "released"
         #expect(kind("Membership prices rise") == nil)             // not "ships"

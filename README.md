@@ -7,8 +7,8 @@ same story, shows where each one came from and how fresh it is, and ranks them w
 milestones add briefings and desktop widgets. Local-first, no account, sandboxed. Free and open source. Mac first, iPhone later.
 
 **Status:** early development. The app fetches 33 feeds and the Hacker News front page, groups reports of the
-same story, labels and ranks them by rules, and shows the result as a searchable list. There is no AI, briefing,
-menu bar item or widget rendering yet.
+same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
+There is no AI, briefing or widget rendering yet.
 See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 
 ## What works today
@@ -17,7 +17,11 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - One row per story: the same story from several sources is grouped, with every source listed.
 - Rule-based labels (shipping, announcement, research, funding and so on) that record which rule fired. Most stories are left unlabelled rather than guessed.
 - Top view ranked by source authority, independent coverage, community interest and recency, with the reasons shown. Latest view is newest first.
-- Stories older than 90 days are dropped.
+- Overview, AI Intelligence, Technology News and Saved views; a detail pane listing every source for a story.
+- Read state, Read Later and Favourite. Filter by kind. Follow or mute companies, technologies and words.
+- Add your own RSS or Atom feeds; switch any source off.
+- A menu bar item showing how many top stories are unread.
+- Stories older than 90 days are dropped unless you saved them.
 - RSS 2.0, RSS 1.0 and Atom parsing; Hacker News through the Algolia search API.
 - Conditional requests, so unchanged feeds cost a 304.
 - Plain-text cleaning of everything fetched, https only, per-response size and item caps.

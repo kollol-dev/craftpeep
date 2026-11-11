@@ -200,6 +200,13 @@ public struct ClusterSummary: Sendable, Equatable, Identifiable {
     public var score: Int?
     public var commentCount: Int?
     public var entities: [String]
+    public var readAt: Date?
+    /// Set when the user saves the story to read later.
+    public var savedAt: Date?
+    public var isFavourite: Bool
+
+    public var isRead: Bool { readAt != nil }
+    public var isSaved: Bool { savedAt != nil }
 
     public init(
         id: Int64,
@@ -220,8 +227,14 @@ public struct ClusterSummary: Sendable, Equatable, Identifiable {
         verification: Verification = .unverified,
         score: Int? = nil,
         commentCount: Int? = nil,
-        entities: [String] = []
+        entities: [String] = [],
+        readAt: Date? = nil,
+        savedAt: Date? = nil,
+        isFavourite: Bool = false
     ) {
+        self.readAt = readAt
+        self.savedAt = savedAt
+        self.isFavourite = isFavourite
         self.id = id
         self.headline = headline
         self.excerpt = excerpt
@@ -263,6 +276,45 @@ public struct Interest: Sendable, Equatable, Identifiable {
     }
 }
 
+/// Which stories a list wants. Every condition that is set must hold.
+public struct StoryFilter: Sendable, Equatable {
+    /// Only stories active on or after this time.
+    public var since: Date = .distantPast
+    /// Full-text query over the titles and excerpts of member articles.
+    public var query: String?
+    /// A subject area: the story is tagged with one of `entityNames`, or comes from a source whose
+    /// first topic is `sourceTopic`. Nil means every subject.
+    public var subject: Subject?
+    /// Only these kinds. Unclassified stories are excluded when this is set.
+    public var kinds: Set<StoryKind>?
+    /// Only stories the user saved for later or marked as a favourite.
+    public var keptOnly = false
+
+    public struct Subject: Sendable, Equatable {
+        public var entityNames: [String]
+        public var sourceTopic: String?
+
+        public init(entityNames: [String], sourceTopic: String? = nil) {
+            self.entityNames = entityNames
+            self.sourceTopic = sourceTopic
+        }
+    }
+
+    public init(
+        since: Date = .distantPast,
+        query: String? = nil,
+        subject: Subject? = nil,
+        kinds: Set<StoryKind>? = nil,
+        keptOnly: Bool = false
+    ) {
+        self.since = since
+        self.query = query
+        self.subject = subject
+        self.kinds = kinds
+        self.keptOnly = keptOnly
+    }
+}
+
 public protocol ClusterRepository: Sendable {
     /// Articles not yet in a cluster, oldest first.
     func unclusteredArticles() async throws -> [ArticleDigest]
@@ -272,12 +324,18 @@ public protocol ClusterRepository: Sendable {
     func apply(_ assignments: [ClusterAssignment], at now: Date) async throws -> Set<Int64>
     func members(of clusterIDs: Set<Int64>) async throws -> [Int64: [ArticleDigest]]
     func save(_ updates: [ClusterUpdate]) async throws
-    /// Clusters active on or after `date`, unranked. `matching` is a full-text query over member articles.
-    func summaries(since date: Date, matching query: String?) async throws -> [ClusterSummary]
+    /// Clusters matching the filter, newest first, unranked.
+    func summaries(_ filter: StoryFilter) async throws -> [ClusterSummary]
+    func setRead(_ read: Bool, clusterID: Int64, at now: Date) async throws
+    func setSaved(_ saved: Bool, clusterID: Int64, at now: Date) async throws
+    func setFavourite(_ favourite: Bool, clusterID: Int64) async throws
+    /// Clusters whose stored facts no longer match their members (for example after a source was removed).
+    /// Clusters left with no members are deleted here.
+    func clustersNeedingRepair() async throws -> Set<Int64>
     /// Every article in a cluster, most authoritative first.
     func stories(inCluster id: Int64) async throws -> [Story]
     /// Deletes articles dated before `articlesBefore`, clusters left empty, and fetch log rows before
-    /// `logsBefore`. Returns the number of articles removed.
+    /// `logsBefore`. Stories the user saved or marked as favourite are kept. Returns the number of articles removed.
     @discardableResult
     func purge(articlesBefore: Date, logsBefore: Date) async throws -> Int
 }

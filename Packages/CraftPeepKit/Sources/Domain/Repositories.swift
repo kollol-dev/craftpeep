@@ -57,6 +57,10 @@ public protocol SourceRepository: Sendable {
     func allSources() async throws -> [Source]
     func enabledSources() async throws -> [Source]
     func setEnabled(_ enabled: Bool, sourceID: Int64) async throws
+    /// Adds a source the user typed in. Returns false if that URL is already present.
+    func addUserSource(_ definition: SourceDefinition) async throws -> Bool
+    /// Removes a source and every article fetched from it.
+    func delete(sourceID: Int64) async throws
     /// Updates the source's health fields and appends to the fetch log.
     func record(_ outcome: FetchOutcome) async throws
 }
