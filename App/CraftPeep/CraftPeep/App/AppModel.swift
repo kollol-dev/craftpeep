@@ -1,3 +1,4 @@
+import AI
 import AppKit
 import Domain
 import Foundation
@@ -69,12 +70,30 @@ final class AppModel {
     private(set) var startupError: String?
     private(set) var loadError: String?
 
+    // AI. Everything here stays empty until the user switches AI on in Settings.
+    private(set) var summary: StorySummary?
+    private(set) var summaryError: String?
+    private(set) var isSummarising = false
+    private(set) var briefing: Briefing?
+    private(set) var briefingError: String?
+    private(set) var isWritingBriefing = false
+    private(set) var aiUsageToday = AIUsageTotals()
+    private(set) var savedKeyKinds: Set<ProviderKind> = []
+    /// True while the detail pane shows the briefing instead of a story.
+    var showingBriefing = false
+
     var section = SidebarSection.overview { didSet { if section != oldValue { selection = nil; scheduleReload() } } }
     var order = StoryOrder.top { didSet { if order != oldValue { scheduleReload() } } }
     /// Empty means every kind, including unclassified.
     var kindFilter: Set<StoryKind> = [] { didSet { if kindFilter != oldValue { scheduleReload() } } }
     var searchText = ""
-    var selection: Int64? { didSet { if selection != oldValue { Task { await selectionChanged() } } } }
+    var selection: Int64? {
+        didSet {
+            guard selection != oldValue else { return }
+            if selection != nil { showingBriefing = false }
+            Task { await selectionChanged() }
+        }
+    }
 
     private struct Services {
         let sources: any SourceRepository
@@ -82,6 +101,11 @@ final class AppModel {
         let interests: any InterestRepository
         let ingestion: IngestionService
         let intelligence: IntelligenceService
+        let secrets: any SecretStore
+        let gateway: AIGateway
+        let usage: any AIUsageRepository
+        let summaries: SummaryService
+        let briefings: BriefingService
     }
 
     private let services: Services?
@@ -101,6 +125,9 @@ final class AppModel {
             let sources = GRDBSourceRepository(database: database)
             let clusters = GRDBClusterRepository(database: database)
             let interests = GRDBInterestRepository(database: database)
+            let secrets = KeychainSecretStore()
+            let usage = GRDBAIUsageRepository(database: database)
+            let gateway = AIGateway(settings: { AIPreferences.current() }, secrets: secrets, usage: usage)
             services = Services(
                 sources: sources,
                 clusters: clusters,
@@ -110,7 +137,12 @@ final class AppModel {
                     articles: GRDBArticleRepository(database: database),
                     http: URLSessionHTTPClient()
                 ),
-                intelligence: IntelligenceService(clusters: clusters, interests: interests, rules: try RuleSet.bundled())
+                intelligence: IntelligenceService(clusters: clusters, interests: interests, rules: try RuleSet.bundled()),
+                secrets: secrets,
+                gateway: gateway,
+                usage: usage,
+                summaries: SummaryService(gateway: gateway, clusters: clusters, summaries: GRDBSummaryRepository(database: database)),
+                briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database))
             )
         } catch {
             services = nil
@@ -145,12 +177,14 @@ final class AppModel {
             loadError = "Could not prepare stored stories."
         }
         await reload()
+        await refreshAIStatus()
         #if DEBUG
         DebugSnapshot.scheduleIfRequested(model: self)
         #endif
 
         while !Task.isCancelled {
             await refresh(onlyDue: true)
+            await writeBriefingIfDue()
             try? await Task.sleep(for: Self.schedulerTick, tolerance: .seconds(60))
         }
     }
@@ -273,9 +307,16 @@ final class AppModel {
 
     private func selectionChanged() async {
         coverage = []
+        summary = nil
+        summaryError = nil
         guard let services, let id = selection else { return }
         coverage = (try? await services.clusters.stories(inCluster: id)) ?? []
         guard selection == id else { return }
+        // Only a summary already written is shown here. Writing one costs money and waits to be asked.
+        if let item = selectedItem {
+            let cached = try? await services.summaries.cachedSummary(for: item.summary)
+            if selection == id { summary = cached }
+        }
         if selectedItem?.summary.isRead == false {
             await update(id) { summary, now in
                 try await services.clusters.setRead(true, clusterID: id, at: now)
@@ -361,6 +402,97 @@ final class AppModel {
         guard let url = URL(string: string), let scheme = url.scheme?.lowercased(),
               scheme == "https" || scheme == "http" else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    // MARK: - AI
+
+    var isAIEnabled: Bool { AIPreferences.current().isEnabled }
+
+    func refreshAIStatus() async {
+        guard let services else { return }
+        savedKeyKinds = Set(ProviderKind.allCases.filter {
+            (try? services.secrets.secret(for: AIGateway.keyAccount(for: $0)))?.isEmpty == false
+        })
+        aiUsageToday = (try? await services.usage.totals(since: Calendar.current.startOfDay(for: Date()))) ?? AIUsageTotals()
+        briefing = try? await services.briefings.todaysBriefing()
+    }
+
+    func summariseSelected() async {
+        guard let services, let item = selectedItem, !isSummarising else { return }
+        isSummarising = true
+        summaryError = nil
+        defer { isSummarising = false }
+        do {
+            let written = try await services.summaries.summarise(item.summary)
+            if selection == item.id { summary = written }
+        } catch {
+            if selection == item.id { summaryError = Self.message(for: error) }
+        }
+        await refreshAIStatus()
+    }
+
+    func writeBriefing() async {
+        guard let services, !isWritingBriefing else { return }
+        isWritingBriefing = true
+        briefingError = nil
+        defer { isWritingBriefing = false }
+        do {
+            // The app chooses the stories; the model only explains them.
+            let ranked = try await services.intelligence.rankedStories(
+                StoryFilter(since: Date().addingTimeInterval(-36 * 3600)), limit: 14
+            )
+            briefing = try await services.briefings.generate(from: ranked.map(\.summary))
+        } catch {
+            briefingError = Self.message(for: error)
+        }
+        await refreshAIStatus()
+    }
+
+    /// Writes today's briefing once, after seven in the morning, if the user asked for that.
+    private func writeBriefingIfDue() async {
+        guard AIPreferences.current().isEnabled, AIPreferences.automaticBriefing, briefing == nil, briefingError == nil,
+              Calendar.current.component(.hour, from: Date()) >= 7 else { return }
+        await writeBriefing()
+    }
+
+    func story(for clusterID: Int64) -> StoryItem? {
+        stories.first { $0.id == clusterID }
+    }
+
+    /// Returns a message when the key could not be stored.
+    func saveKey(_ key: String, for kind: ProviderKind) async -> String? {
+        guard let services else { return "CraftPeep is not running." }
+        do {
+            try services.secrets.setSecret(key.trimmingCharacters(in: .whitespacesAndNewlines), for: AIGateway.keyAccount(for: kind))
+        } catch {
+            return "The Keychain did not accept the key."
+        }
+        await refreshAIStatus()
+        return nil
+    }
+
+    func removeKey(for kind: ProviderKind) async {
+        guard let services else { return }
+        try? services.secrets.setSecret(nil, for: AIGateway.keyAccount(for: kind))
+        await refreshAIStatus()
+    }
+
+    func testAIConnection() async -> String {
+        guard let services else { return "CraftPeep is not running." }
+        defer { Task { await refreshAIStatus() } }
+        do {
+            let response = try await services.gateway.complete(AIRequest(
+                feature: .connectionTest, system: "This is a connection test.", user: "Reply with the single word OK.",
+                maxOutputTokens: 2_000, effort: .low
+            ))
+            return "Connected. \(response.model) replied."
+        } catch {
+            return Self.message(for: error)
+        }
+    }
+
+    private static func message(for error: any Error) -> String {
+        (error as? ProviderError)?.description ?? "Something went wrong. \(error.localizedDescription)"
     }
 
     // MARK: - Settings actions

@@ -6,6 +6,12 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- AI layer (M4b), off by default.
+  - `AI` target with Anthropic and OpenAI-compatible providers over plain HTTPS; no SDK dependency.
+  - Story summaries on request, cached; a daily briefing whose every item cites stored stories.
+  - API keys in the Keychain; usage ledger with estimated cost; daily token limit. Schema v5.
+  - AI settings pane with a plain statement of what is sent and to whom.
+
 - Reading experience (M4a).
   - Three-pane window with Overview, AI Intelligence, Technology News and Saved.
   - Story detail showing every source, support level, the rule behind a label, and ranking reasons.

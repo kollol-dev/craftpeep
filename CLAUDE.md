@@ -67,4 +67,6 @@ Open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode to run the app.
 - Test fixtures are synthetic. Do not commit copies of real publishers' feeds.
 - To check UI without screen access, use the snapshot mode above; PNGs land in the app container under `Application Support/CraftPeep/snapshots`. Sidebar and toolbar chrome come out blank.
 - App builds can take several minutes; run `xcodebuild` in the background.
+- Every AI call goes through `AIGateway`; features never build a provider themselves. Fetched text goes in the user message as JSON string values, never in the system prompt.
+- When changing Claude API request code, load the `claude-api` skill first; request shapes change between model generations.
 - The repository is open source: never commit keys, personal details or private feed URLs.

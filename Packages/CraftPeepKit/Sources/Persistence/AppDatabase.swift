@@ -152,6 +152,39 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "UPDATE article SET published_at = NULL WHERE published_at > retrieved_at + 300")
         }
 
+        migrator.registerMigration("v5-ai") { db in
+            try db.execute(sql: """
+                CREATE TABLE summary (
+                  cluster_id      INTEGER PRIMARY KEY REFERENCES cluster(id) ON DELETE CASCADE,
+                  input_hash      TEXT NOT NULL,
+                  text            TEXT NOT NULL,
+                  why_it_matters  TEXT NOT NULL,
+                  provider        TEXT NOT NULL,
+                  model           TEXT NOT NULL,
+                  created_at      INTEGER NOT NULL
+                );
+
+                CREATE TABLE briefing (
+                  for_date   TEXT PRIMARY KEY,
+                  body       TEXT NOT NULL,
+                  created_at INTEGER NOT NULL
+                );
+
+                CREATE TABLE ai_usage (
+                  id              INTEGER PRIMARY KEY,
+                  at              INTEGER NOT NULL,
+                  feature         TEXT NOT NULL,
+                  provider        TEXT NOT NULL,
+                  model           TEXT NOT NULL,
+                  input_tokens    INTEGER,
+                  output_tokens   INTEGER,
+                  est_cost_micros INTEGER,
+                  outcome         TEXT NOT NULL
+                );
+                CREATE INDEX ai_usage_at ON ai_usage(at);
+                """)
+        }
+
         return migrator
     }
 }

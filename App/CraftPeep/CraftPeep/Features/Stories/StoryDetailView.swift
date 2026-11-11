@@ -17,6 +17,7 @@ struct StoryDetailView: View {
                         .textSelection(.enabled)
                 }
                 actions
+                aiSummary
                 Divider()
                 facts
                 Divider()
@@ -27,6 +28,42 @@ struct StoryDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .navigationTitle("")
+    }
+
+    /// AI text is always marked as such, with the model and time, and sits beside the sources it came from.
+    @ViewBuilder
+    private var aiSummary: some View {
+        if let summary = model.summary {
+            VStack(alignment: .leading, spacing: Spacing.tight) {
+                Label("AI summary", systemImage: "sparkles")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
+                Text(summary.text)
+                    .textSelection(.enabled)
+                Text("Why it matters: \(summary.whyItMatters)")
+                    .textSelection(.enabled)
+                Text("Written by \(summary.model) \(summary.createdAt.relative) from the sources below. It may be wrong; check the originals.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(Spacing.block)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(.quaternary.opacity(0.5), in: RoundedRectangle(cornerRadius: 8))
+        } else if model.isAIEnabled {
+            HStack(spacing: Spacing.row) {
+                Button {
+                    Task { await model.summariseSelected() }
+                } label: {
+                    Label(model.isSummarising ? "Summarising…" : "Summarise with AI", systemImage: "sparkles")
+                }
+                .disabled(model.isSummarising)
+                if let error = model.summaryError {
+                    Text(error)
+                        .font(.callout)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
     }
 
     private var header: some View {

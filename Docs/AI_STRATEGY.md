@@ -1,6 +1,6 @@
 # AI Strategy
 
-Status: proposed, 10 November 2026.
+Status: implemented in part, 11 November 2026. The provider abstraction, summaries, briefing, ledger and budget exist; see ROADMAP.md (M4b) for what was built, what differs from this document, and what has not been tested against a real model. The widget builder, classification refinement and weekly reports are not started.
 
 ## Principles
 

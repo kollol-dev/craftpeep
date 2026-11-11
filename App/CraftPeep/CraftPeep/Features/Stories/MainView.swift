@@ -18,7 +18,9 @@ struct MainView: View {
             StoryListView(model: model)
                 .navigationSplitViewColumnWidth(min: 360, ideal: 460)
         } detail: {
-            if let item = model.selectedItem {
+            if model.showingBriefing, let briefing = model.briefing {
+                BriefingView(briefing: briefing, model: model)
+            } else if let item = model.selectedItem {
                 StoryDetailView(item: item, model: model)
             } else {
                 ContentUnavailableView("No story selected", systemImage: "doc.text", description: Text("Choose a story to see every source reporting it."))
@@ -102,6 +104,10 @@ struct StoryListView: View {
                     DigestView(digest: digest)
                         .listRowSeparator(.hidden)
                         .selectionDisabled()
+                    if model.briefing != nil || model.isAIEnabled {
+                        BriefingRow(model: model)
+                            .selectionDisabled()
+                    }
                 }
                 ForEach(model.stories) { item in
                     StoryRow(item: item, density: density)
@@ -220,6 +226,49 @@ private struct DigestView: View {
         if digest.official > 0 { parts.append("\(digest.official) from official sources") }
         if digest.multiSource > 0 { parts.append("\(digest.multiSource) covered by more than one publication") }
         return parts.joined(separator: " · ")
+    }
+}
+
+/// The way into the AI briefing from Overview: open it if written, offer to write it if not.
+private struct BriefingRow: View {
+    let model: AppModel
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline, spacing: Spacing.row) {
+            Image(systemName: "sparkles")
+                .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
+            if let briefing = model.briefing {
+                Button {
+                    model.selection = nil
+                    model.showingBriefing = true
+                } label: {
+                    VStack(alignment: .leading, spacing: Spacing.tight) {
+                        Text("Today’s briefing")
+                            .font(.headline)
+                        Text(briefing.headline)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .multilineTextAlignment(.leading)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .accessibilityHint("Shows the AI-written briefing")
+            } else {
+                VStack(alignment: .leading, spacing: Spacing.tight) {
+                    Button(model.isWritingBriefing ? "Writing briefing…" : "Write Today’s Briefing") {
+                        Task { await model.writeBriefing() }
+                    }
+                    .disabled(model.isWritingBriefing)
+                    Text(model.briefingError ?? "Sends the headlines and excerpts of the top stories to your AI provider.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+        .padding(.vertical, Spacing.tight)
     }
 }
 

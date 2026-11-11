@@ -103,12 +103,33 @@ Not done from the original M4a intent, and why:
 - Hiding the Dock icon when only the menu bar is in use. The app keeps running with its window closed, which is the part that matters for refresh.
 - Source priority ordering. Interests already do this job per topic.
 
-#### M4b AI layer — next
+#### M4b AI layer — built; not yet exercised against a real model
 
-- [ ] `AI` target: provider protocol, Anthropic and OpenAI-compatible clients, Keychain, usage ledger, budget
-- [ ] Cluster summaries, cached by content
-- [ ] Morning briefing, with the current Overview count as the fallback when AI is off
-- [ ] AI settings pane with disclosure of what is sent
+- [x] `AI` target: provider protocol, Anthropic (Messages API) and OpenAI-compatible clients, Keychain storage, usage ledger, daily token budget, one retry on transient failures
+- [x] Story summaries on request, cached by the content of the story's articles
+- [x] Daily briefing answering the brief's questions; every item must cite stories it was given, or it is dropped
+- [x] The Overview count stays as the fallback when AI is off or fails
+- [x] AI settings pane: provider, model, key, daily limit, automatic briefing (off by default), test connection, usage today, and a statement of what is sent
+- [x] Schema v5: summaries, briefings, usage ledger
+
+Checked on 11 November 2026:
+
+- 184 package tests pass. The AI tests use recorded response shapes and cover request bodies, headers, error mapping, refusal and truncation, budget, retry, caching, and a prompt-injection fixture.
+- The real network transport reached the Ollama server on this Mac and mapped its "model not found" reply correctly.
+
+Not checked, and it matters:
+
+- **No real model has written a summary or briefing yet.** No API key was available to the build process, and the local Ollama server has no model installed. The quality of the prompts is therefore unknown, and the exact request shape has not been accepted by a live Anthropic or OpenAI endpoint.
+- The Keychain store has not been exercised inside the sandboxed app.
+- The OpenAI-compatible request details (token parameter names, `response_format`) are from memory, not from current provider documentation.
+
+Choices made here that differ from AI_STRATEGY.md as first written:
+
+- **One model for everything, default Claude Opus 5.5.** The plan was a cheap model for summaries and a stronger one for the briefing. A per-feature model picker is more settings than the feature has earned; the user can choose Haiku 5.5 for everything if cost matters. Summaries run at low effort, the briefing at medium.
+- **Summaries are written only when asked.** Automatic summarising of the top stories after each refresh was planned and left out: it spends money without the user acting. The briefing can be made automatic, and that is off by default.
+- **Interest keywords are not sent** to the provider at all, which is stricter than planned.
+- **No provider fallback chain** (cloud to local). For Claude models that support it, the request asks Anthropic to retry a declined request on another of its models within the same call.
+- **Briefing story links are stored inside the briefing**, not in a join table.
 
 #### M4c First widget
 

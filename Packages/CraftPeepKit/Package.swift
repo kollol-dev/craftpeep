@@ -8,7 +8,7 @@ let package = Package(
         .library(
             name: "CraftPeepKit",
             targets: [
-                "Domain", "Persistence", "Ingestion", "Intelligence",
+                "Domain", "Persistence", "Ingestion", "Intelligence", "AI",
                 "WidgetSpec", "WidgetExpr", "WidgetRuntime", "WidgetRender"
             ]
         )
@@ -33,6 +33,7 @@ let package = Package(
             dependencies: ["Domain"],
             resources: [.process("Resources")]
         ),
+        .target(name: "AI", dependencies: ["Domain"]),
         .target(name: "WidgetSpec"),
         .target(name: "WidgetExpr"),
         .target(name: "WidgetRuntime", dependencies: ["WidgetSpec", "WidgetExpr"]),
@@ -45,6 +46,10 @@ let package = Package(
             resources: [.copy("Fixtures")]
         ),
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Domain"]),
+        .testTarget(
+            name: "AITests",
+            dependencies: ["AI", "Intelligence", "Persistence", "Domain", .product(name: "GRDB", package: "GRDB.swift")]
+        ),
         .testTarget(
             name: "IntelligenceTests",
             dependencies: ["Intelligence", "Ingestion", "Persistence", "Domain"],

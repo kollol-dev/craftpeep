@@ -13,8 +13,10 @@ struct SettingsView: View {
                 .tabItem { Label("Sources", systemImage: "dot.radiowaves.up.forward") }
             InterestsSettings(model: model)
                 .tabItem { Label("Interests", systemImage: "heart.text.square") }
+            AISettingsView(model: model)
+                .tabItem { Label("AI", systemImage: "sparkles") }
         }
-        .frame(width: 640, height: 480)
+        .frame(width: 640, height: 560)
     }
 }
 

@@ -26,6 +26,7 @@ enum DebugSnapshot {
             if options.contains("panels") {
                 show(SettingsView(model: model), title: "Settings", size: NSSize(width: 640, height: 480))
                 show(PulseView(model: model), title: "Pulse", size: NSSize(width: 360, height: 420))
+                show(AISettingsView(model: model), title: "AI Settings", size: NSSize(width: 640, height: 640))
             }
             try? await Task.sleep(for: .seconds(2))
             capture()

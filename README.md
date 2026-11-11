@@ -8,7 +8,7 @@ milestones add briefings and desktop widgets. Local-first, no account, sandboxed
 
 **Status:** early development. The app fetches 33 feeds and the Hacker News front page, groups reports of the
 same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
-There is no AI, briefing or widget rendering yet.
+Optional AI summaries and a daily briefing are built but have not yet been run against a real model. There is no widget rendering yet.
 See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 
 ## What works today
@@ -49,6 +49,7 @@ Package targets:
 | `Persistence` | SQLite schema, migrations, repositories, full-text search (GRDB) | In use |
 | `Ingestion` | HTTP client, feed parser, Hacker News adapter, cleaning, refresh service, source catalogue | In use |
 | `Intelligence` | Clustering, classification rules, tagging, ranking | In use |
+| `AI` | Provider clients, Keychain, usage ledger and budget, summaries, briefing | In use, untested against a live model |
 | `WidgetSpec` | Codable widget models, loader, validation | Built, not wired to the app |
 | `WidgetExpr` | Expression interpreter for widget files | Built, not wired to the app |
 | `WidgetRuntime`, `WidgetRender` | Widget data binding and SwiftUI rendering | Not started |
@@ -84,7 +85,7 @@ and choose **Open Anyway**.
 
 ## Privacy
 
-CraftPeep has no account and sends no telemetry. It connects only to the feeds in
+CraftPeep has no account and sends no telemetry. AI is off unless you switch it on and supply your own key or a local model; when on, it sends the headlines and excerpts of the stories being summarised to the provider you chose, and nothing else. Otherwise it connects only to the feeds in
 [sources.catalog.json](Packages/CraftPeepKit/Sources/Ingestion/Resources/sources.catalog.json), without cookies.
 Stories are stored in the app's sandbox container. See [Docs/SECURITY.md](Docs/SECURITY.md).
 
