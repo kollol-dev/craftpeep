@@ -15,6 +15,8 @@ struct SettingsView: View {
                 .tabItem { Label("Interests", systemImage: "heart.text.square") }
             AISettingsView(model: model)
                 .tabItem { Label("AI", systemImage: "sparkles") }
+            WidgetSettingsView(model: model)
+                .tabItem { Label("Widget", systemImage: "rectangle.on.rectangle") }
         }
         .frame(width: 640, height: 560)
     }

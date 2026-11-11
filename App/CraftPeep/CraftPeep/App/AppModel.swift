@@ -6,6 +6,10 @@ import Ingestion
 import Intelligence
 import Observation
 import Persistence
+import WidgetExpr
+import WidgetRender
+import WidgetRuntime
+import WidgetSpec
 
 /// One row in a story list: a story and why it is where it is.
 struct StoryItem: Identifiable, Equatable {
@@ -81,6 +85,11 @@ final class AppModel {
     private(set) var savedKeyKinds: Set<ProviderKind> = []
     /// True while the detail pane shows the briefing instead of a story.
     var showingBriefing = false
+
+    // Desktop widget
+    private(set) var widget = DesktopWidgetState.loading
+    private var widgetStoryIDs: [String: Int64] = [:]
+    private let widgetController = DesktopWidgetController()
 
     var section = SidebarSection.overview { didSet { if section != oldValue { selection = nil; scheduleReload() } } }
     var order = StoryOrder.top { didSet { if order != oldValue { scheduleReload() } } }
@@ -286,6 +295,7 @@ final class AppModel {
         } catch {
             loadError = "Could not read stored stories."
         }
+        await refreshWidget()
     }
 
     private static func makeDigest(_ stories: [ClusterSummary]) -> DailyDigest? {
@@ -402,6 +412,73 @@ final class AppModel {
         guard let url = URL(string: string), let scheme = url.scheme?.lowercased(),
               scheme == "https" || scheme == "http" else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    // MARK: - Desktop widget
+
+    /// Gives a widget the same stories, ranking and mutes the main window uses.
+    private struct StoreStories: WidgetStorySource {
+        let intelligence: IntelligenceService
+
+        func stories(_ filter: StoryFilter, ranked: Bool, limit: Int) async throws -> [ClusterSummary] {
+            let found = ranked
+                ? try await intelligence.rankedStories(filter, limit: limit)
+                : try await intelligence.latestStories(filter, limit: limit)
+            return found.map(\.summary)
+        }
+    }
+
+    /// Recomputes what the desktop widget shows and makes its window match the user's choice.
+    func refreshWidget() async {
+        let preferences = WidgetPreferences.current()
+        widgetController.sync(model: self, preferences: preferences)
+        guard preferences.isEnabled || WidgetPreferences.alwaysResolve, let services else { return }
+        do {
+            let definition = try BundledWidgets.newsList()
+            let snapshot = await WidgetRuntime.resolve(
+                definition,
+                settings: ["subject": .string(preferences.subject), "showSources": .bool(preferences.showSources)],
+                source: StoreStories(intelligence: services.intelligence),
+                subjects: ["ai": Subjects.ai]
+            )
+            // Remember which story each link belongs to, so opening one can mark it read.
+            var ids: [String: Int64] = [:]
+            if case .array(let stories)? = snapshot.scope.variables["data"].flatMap({ value -> ExprValue? in
+                if case .object(let data) = value { return data["stories"] }
+                return nil
+            }) {
+                for case .object(let story) in stories {
+                    if case .string(let url)? = story["url"], case .number(let id)? = story["id"] { ids[url] = Int64(id) }
+                }
+            }
+            widgetStoryIDs = ids
+
+            let result = RenderTree.build(definition, size: preferences.size, scope: snapshot.scope)
+            if let issue = snapshot.issues.first ?? result.issues.first {
+                widget = .failed(issue)
+            } else if snapshot.hasNoStories {
+                widget = .empty
+            } else if let root = result.root {
+                widget = .ready(root, asOf: lastUpdated)
+            } else {
+                widget = .failed("The widget has nothing to draw.")
+            }
+        } catch {
+            widget = .failed("The widget could not be loaded.")
+        }
+    }
+
+    func perform(_ action: RenderAction) {
+        switch action {
+        case .openURL(let url):
+            Self.openWebLink(url)
+            if let id = widgetStoryIDs[url] { Task { await markRead(id); await refreshWidget() } }
+        case .copy(let text):
+            NSPasteboard.general.clearContents()
+            NSPasteboard.general.setString(text, forType: .string)
+        case .refresh:
+            Task { await refresh() }
+        }
     }
 
     // MARK: - AI

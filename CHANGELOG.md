@@ -6,6 +6,15 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- First desktop widget (M4c), off by default.
+  - Widget spec 0.2 with a `query` source that reads stories from the local store and needs no permissions.
+  - `WidgetRuntime` and `WidgetRender`: declarative widget files drawn with native SwiftUI; nothing is executed.
+  - News List widget in three sizes, in a desktop-level window that remembers where it was put.
+
+### Changed
+
+- Widget files may no longer ask for `commands` or `files` permissions; those were never implemented and are now refused.
+
 - AI layer (M4b), off by default.
   - `AI` target with Anthropic and OpenAI-compatible providers over plain HTTPS; no SDK dependency.
   - Story summaries on request, cached; a daily briefing whose every item cites stored stories.

@@ -7,8 +7,8 @@ Status: accepted direction, 10 November 2026. Describes the target; see "Current
 | Exists | Notes |
 |---|---|
 | `Packages/CraftPeepKit` targets `Domain`, `Persistence`, `Ingestion`, `Intelligence` | Ingestion (M2) and clustering, classification, tagging, ranking (M3). 80 tests. |
-| `WidgetSpec` (Codable models, loader, validation) and `WidgetExpr` (lexer, parser, interpreter, 20 functions, templates) | 59 tests. Not yet connected to the app. |
-| `WidgetRuntime`, `WidgetRender` | Empty placeholder targets. |
+| `WidgetSpec` (Codable models, loader, validation, spec 0.2) and `WidgetExpr` (lexer, parser, interpreter, 20 functions, templates) | 63 tests. Used by the desktop widget. |
+| `WidgetRuntime`, `WidgetRender` | Store-bound widget resolution and rendering; one bundled widget (News List). 18 tests. |
 | `App/CraftPeep` | Sandboxed app: three-pane reader, story detail, Settings, menu bar item. `App/` holds composition and the one `AppModel`; `Features/`, `MenuBar/` and `DesignSystem/` hold views. |
 | `Docs/SPEC.md`, `Schema/widget.schema.json`, three example widgets | Spec v0.1 draft. |
 

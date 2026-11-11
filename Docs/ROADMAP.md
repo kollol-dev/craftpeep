@@ -131,9 +131,26 @@ Choices made here that differ from AI_STRATEGY.md as first written:
 - **No provider fallback chain** (cloud to local). For Claude models that support it, the request asks Anthropic to retry a declined request on another of its models within the same call.
 - **Briefing story links are stored inside the briefing**, not in a join table.
 
-#### M4c First widget
+#### M4c First widget — complete
 
-- [ ] Spec 0.2 `query` source, `WidgetRuntime`, `WidgetRender` for News List, one desktop-level panel with persisted position
+- [x] Spec 0.2: a `query` data source that reads stories from the local store; the `commands` and `files` permissions are refused
+- [x] `WidgetRuntime`: resolves a widget's settings and queries against the store, through the same ranking and mutes the main window uses
+- [x] `WidgetRender`: a pure render tree (tested without a screen) and SwiftUI views that draw it
+- [x] News List, shipped as an ordinary widget file with three sizes and two settings
+- [x] A desktop-level window, draggable, with its position remembered; a Widget tab in Settings (off by default)
+- [x] States drawn: loading, stories, nothing to show, failure; freshness always stated, old data says it is old
+
+Checked on 11 November 2026: 206 package tests pass. From the app's own screenshots, the widget drew six real ranked stories from its JSON definition, and the Widget settings tab rendered. With the widget switched on, the system reported its window at the level just above the desktop icons, below normal windows, at the saved position.
+
+Not checked: dragging the window and the position being saved by a real drag; clicking a headline in the desktop window; behaviour across Spaces, Mission Control, Stage Manager and a second display; how the translucent background looks over a wallpaper.
+
+Decisions that differ from WIDGET_SYSTEM.md as first written:
+
+- **The News List is a widget file with settings, not a "template plus params".** A bundled file whose settings the user adjusts is the same idea with one fewer mechanism. A separate template layer can be added if the AI builder needs it.
+- **Size decides how many stories show** (3, 6, 10), using the spec's per-size views.
+- **The widget's placement is in preferences, not a `widget_instance` table**, while there is exactly one widget.
+- **The query collection is called `stories`**, not `clusters`: it is the word the user sees.
+- **Spec 0.1 files still load.** Nothing was removed from 0.1 except the two permissions that were never implemented.
 
 #### Before calling it v0.1
 

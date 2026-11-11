@@ -45,7 +45,8 @@ final class WidgetSpecTests: XCTestCase {
     // MARK: - Basics
 
     func testSpecVersion() {
-        XCTAssertEqual(WidgetSpecInfo.version, "0.1")
+        XCTAssertEqual(WidgetSpecInfo.version, "0.2")
+        XCTAssertEqual(WidgetSpecInfo.supportedVersions, ["0.1", "0.2"])
     }
 
     func testMinimalSpecDecodes() throws {
@@ -120,12 +121,12 @@ final class WidgetSpecTests: XCTestCase {
     }
 
     func testRejectsNewerSpecVersion() {
-        XCTAssertThrowsError(try decode(minimalSpec(spec: "0.2"))) { error in
+        XCTAssertThrowsError(try decode(minimalSpec(spec: "0.9"))) { error in
             guard case WidgetSpecError.unsupportedSpecVersion(let found, let supported) = error else {
                 return XCTFail("Expected .unsupportedSpecVersion, got \(error)")
             }
-            XCTAssertEqual(found, "0.2")
-            XCTAssertEqual(supported, "0.1")
+            XCTAssertEqual(found, "0.9")
+            XCTAssertEqual(supported, "0.2")
         }
     }
 
@@ -201,5 +202,57 @@ final class WidgetSpecTests: XCTestCase {
             }
             XCTAssertTrue(issues.contains { $0.contains("duplicate") })
         }
+    }
+
+    // MARK: - Spec 0.2
+
+    private func querySpec(spec: String = "0.2", source: String) -> String {
+        minimalSpec(spec: spec, extra: #","data":{"stories":\#(source)}"#)
+    }
+
+    private func issues(_ json: String) -> [String] {
+        do {
+            _ = try decode(json)
+            return []
+        } catch WidgetSpecError.invalid(let issues) {
+            return issues
+        } catch {
+            return ["unexpected error: \(error)"]
+        }
+    }
+
+    func testQuerySourceDecodesAndNeedsNoPermissions() throws {
+        let widget = try decode(querySpec(source: #"{"type":"query","from":"stories","where":{"subject":"{{ settings.subject }}","kinds":["shipping"],"entities":["Swift"],"sinceHours":48,"saved":false},"sort":"latest","limit":5}"#))
+        let source = try XCTUnwrap(widget.data?["stories"])
+        XCTAssertEqual(source.type, .query)
+        XCTAssertEqual(source.from, "stories")
+        XCTAssertEqual(source.sort, "latest")
+        XCTAssertEqual(source.filter?.kinds, ["shipping"])
+        XCTAssertEqual(source.filter?.sinceHours, 48)
+        XCTAssertNil(widget.permissions)
+    }
+
+    func testQuerySourceIsRejectedInSpec01() {
+        XCTAssertTrue(issues(querySpec(spec: "0.1", source: #"{"type":"query","from":"stories"}"#)).contains { $0.contains("spec 0.2") })
+    }
+
+    func testQuerySourceRulesAreEnforced() {
+        func problems(_ source: String) -> String { issues(querySpec(source: source)).joined(separator: "\n") }
+        XCTAssertTrue(problems(#"{"type":"query","from":"articles"}"#).contains("'from' must be"))
+        XCTAssertTrue(problems(#"{"type":"query"}"#).contains("'from' must be"))
+        XCTAssertTrue(problems(#"{"type":"query","from":"stories","sort":"random"}"#).contains("sort must be"))
+        XCTAssertTrue(problems(#"{"type":"query","from":"stories","limit":500}"#).contains("limit must be"))
+        XCTAssertTrue(problems(#"{"type":"query","from":"stories","where":{"sinceHours":0}}"#).contains("sinceHours"))
+        XCTAssertTrue(problems(#"{"type":"query","from":"stories","where":{"kinds":["gossip"]}}"#).contains("unknown kind 'gossip'"))
+        XCTAssertTrue(problems(#"{"type":"query","from":"stories","where":{"subject":"sports"}}"#).contains("unknown subject"))
+    }
+
+    func testCommandAndFilePermissionsAreRefused() {
+        let commands = issues(minimalSpec(extra: #","permissions":{"commands":true}"#))
+        XCTAssertTrue(commands.contains { $0.contains("cannot run commands") })
+        // Asking for it switched off is still asking for something that does not exist.
+        XCTAssertTrue(issues(minimalSpec(extra: #","permissions":{"commands":false}"#)).contains { $0.contains("commands") })
+        let files = issues(minimalSpec(spec: "0.2", extra: #","permissions":{"files":["~/Documents"]}"#))
+        XCTAssertTrue(files.contains { $0.contains("cannot read files") })
     }
 }

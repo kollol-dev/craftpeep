@@ -1,0 +1,88 @@
+{
+  "spec": "0.2",
+  "id": "com.craftpeep.news-list",
+  "name": "News List",
+  "description": "The top stories from your CraftPeep sources.",
+  "version": "1.0.0",
+  "sizes": ["small", "medium", "large"],
+  "settings": [
+    {
+      "key": "subject", "type": "select", "label": "Subject", "default": "all",
+      "options": [{ "value": "all", "label": "Everything" }, { "value": "ai", "label": "AI" }]
+    },
+    { "key": "showSources", "type": "boolean", "label": "Show source and age", "default": true }
+  ],
+  "data": {
+    "stories": {
+      "type": "query",
+      "from": "stories",
+      "where": { "subject": "{{ settings.subject }}", "sinceHours": 72 },
+      "sort": "rank",
+      "limit": 10
+    }
+  },
+  "view": {
+    "small": {
+      "type": "vstack", "padding": 12, "spacing": 8, "align": "leading",
+      "children": [
+        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 3,
+          "item": {
+            "type": "text", "text": "{{ s.headline }}", "lines": 2, "weight": "medium",
+            "color": "{{ s.isRead ? 'secondary' : 'primary' }}",
+            "action": { "type": "openURL", "value": "{{ s.url }}" }
+          }
+        }
+      ]
+    },
+    "default": {
+      "type": "vstack", "padding": 14, "spacing": 10, "align": "leading",
+      "children": [
+        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 6,
+          "item": {
+            "type": "vstack", "spacing": 2, "align": "leading",
+            "children": [
+              {
+                "type": "text", "text": "{{ s.headline }}", "lines": 2, "weight": "medium",
+                "color": "{{ s.isRead ? 'secondary' : 'primary' }}",
+                "action": { "type": "openURL", "value": "{{ s.url }}" }
+              },
+              {
+                "type": "text", "when": "{{ settings.showSources }}",
+                "text": "{{ s.source }}{{ s.sourceCount > 1 ? ' +' + (s.sourceCount - 1) : '' }} · {{ ago(s.publishedAt) }}",
+                "size": "caption", "color": "secondary", "lines": 1
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "large": {
+      "type": "vstack", "padding": 16, "spacing": 10, "align": "leading",
+      "children": [
+        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 10,
+          "item": {
+            "type": "vstack", "spacing": 2, "align": "leading",
+            "children": [
+              {
+                "type": "text", "text": "{{ s.headline }}", "lines": 2, "weight": "medium",
+                "color": "{{ s.isRead ? 'secondary' : 'primary' }}",
+                "action": { "type": "openURL", "value": "{{ s.url }}" }
+              },
+              {
+                "type": "text", "when": "{{ settings.showSources }}",
+                "text": "{{ s.kind ? s.kind + ' · ' : '' }}{{ s.source }}{{ s.sourceCount > 1 ? ' +' + (s.sourceCount - 1) : '' }} · {{ ago(s.publishedAt) }}",
+                "size": "caption", "color": "secondary", "lines": 1
+              }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

@@ -8,7 +8,7 @@ milestones add briefings and desktop widgets. Local-first, no account, sandboxed
 
 **Status:** early development. The app fetches 33 feeds and the Hacker News front page, groups reports of the
 same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
-Optional AI summaries and a daily briefing are built but have not yet been run against a real model. There is no widget rendering yet.
+Optional AI summaries and a daily briefing are built but have not yet been run against a real model. One desktop widget, a News List, is included and off by default.
 See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 
 ## What works today
@@ -28,8 +28,8 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Full-text search over titles and excerpts.
 - Per-source health: a failing feed is listed with its error and never blocks the others.
 - Works offline from the local store.
-- The widget spec engine (declarative JSON models, validation, `{{ }}` expression interpreter). It is not
-  connected to the app yet.
+- A News List desktop widget, defined as a declarative JSON file and drawn natively. Widgets read the local store;
+  they cannot fetch, run commands or read files.
 
 ## Repository layout
 
@@ -38,7 +38,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 | `App/CraftPeep/` | macOS app (Xcode project, SwiftUI) |
 | `Packages/CraftPeepKit/` | Swift package with all non-UI code |
 | `Docs/` | Requirements, architecture, data sources, security, roadmap, decisions |
-| `Schema/`, `Examples/` | Widget spec JSON Schema and example widgets (spec v0.1) |
+| `Schema/`, `Examples/` | Widget spec JSON Schema (v0.2) and example widgets written for v0.1; the examples use network sources the app does not run |
 | `scripts/build-dmg.sh` | Builds a Release app and packages it as a DMG (local use) |
 
 Package targets:
@@ -50,9 +50,10 @@ Package targets:
 | `Ingestion` | HTTP client, feed parser, Hacker News adapter, cleaning, refresh service, source catalogue | In use |
 | `Intelligence` | Clustering, classification rules, tagging, ranking | In use |
 | `AI` | Provider clients, Keychain, usage ledger and budget, summaries, briefing | In use, untested against a live model |
-| `WidgetSpec` | Codable widget models, loader, validation | Built, not wired to the app |
-| `WidgetExpr` | Expression interpreter for widget files | Built, not wired to the app |
-| `WidgetRuntime`, `WidgetRender` | Widget data binding and SwiftUI rendering | Not started |
+| `WidgetSpec` | Codable widget models, loader, validation | In use |
+| `WidgetExpr` | Expression interpreter for widget files | In use |
+| `WidgetRuntime` | Resolves a widget's settings and store queries; holds the bundled widgets | In use |
+| `WidgetRender` | Pure render tree and the SwiftUI views that draw it | In use |
 
 ## Getting started
 

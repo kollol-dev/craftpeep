@@ -36,8 +36,12 @@ let package = Package(
         .target(name: "AI", dependencies: ["Domain"]),
         .target(name: "WidgetSpec"),
         .target(name: "WidgetExpr"),
-        .target(name: "WidgetRuntime", dependencies: ["WidgetSpec", "WidgetExpr"]),
-        .target(name: "WidgetRender", dependencies: ["WidgetSpec", "WidgetExpr", "WidgetRuntime"]),
+        .target(
+            name: "WidgetRuntime",
+            dependencies: ["WidgetSpec", "WidgetExpr", "Domain"],
+            resources: [.process("Resources")]
+        ),
+        .target(name: "WidgetRender", dependencies: ["WidgetSpec", "WidgetExpr"]),
         .testTarget(name: "WidgetExprTests", dependencies: ["WidgetExpr"]),
         .testTarget(name: "WidgetSpecTests", dependencies: ["WidgetSpec"]),
         .testTarget(
@@ -46,6 +50,10 @@ let package = Package(
             resources: [.copy("Fixtures")]
         ),
         .testTarget(name: "PersistenceTests", dependencies: ["Persistence", "Domain"]),
+        .testTarget(
+            name: "WidgetRuntimeTests",
+            dependencies: ["WidgetRuntime", "WidgetRender", "WidgetSpec", "WidgetExpr", "Intelligence", "Persistence", "Domain"]
+        ),
         .testTarget(
             name: "AITests",
             dependencies: ["AI", "Intelligence", "Persistence", "Domain", .product(name: "GRDB", package: "GRDB.swift")]

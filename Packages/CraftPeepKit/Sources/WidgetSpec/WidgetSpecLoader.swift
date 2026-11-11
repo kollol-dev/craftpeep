@@ -43,7 +43,7 @@ public enum WidgetSpecLoader {
         guard let found = header.spec else {
             throw WidgetSpecError.invalid(["Missing required field 'spec'"])
         }
-        guard found == WidgetSpecInfo.version else {
+        guard WidgetSpecInfo.supportedVersions.contains(found) else {
             throw WidgetSpecError.unsupportedSpecVersion(
                 found: found,
                 supported: WidgetSpecInfo.version
@@ -90,6 +90,18 @@ public enum WidgetSpecLoader {
     }
 }
 
+// MARK: - Query vocabulary
+
+/// The closed sets a `query` source may use. Kept as strings so this module depends on nothing;
+/// a test in the runtime checks they match the app's own types.
+public enum WidgetQueryVocabulary {
+    public static let sorts: Set<String> = ["rank", "latest"]
+    public static let subjects: Set<String> = ["all", "ai"]
+    public static let kinds: Set<String> = [
+        "shipping", "announcement", "research", "benchmark", "funding", "partnership", "speculation", "unverified_claim"
+    ]
+}
+
 // MARK: - Validation
 
 extension WidgetDefinition {
@@ -130,6 +142,15 @@ extension WidgetDefinition {
             }
         }
 
+        // Capabilities that existed on paper in 0.1 and are refused outright: a widget is data, and
+        // can never run commands or read files.
+        if permissions?.commands != nil {
+            issues.append("permissions.commands is not supported: widgets cannot run commands")
+        }
+        if permissions?.files != nil {
+            issues.append("permissions.files is not supported: widgets cannot read files")
+        }
+
         // Data sources
         let allowedHosts = Set((permissions?.network ?? []).map { $0.lowercased() })
         let allowedSystem = Set(permissions?.system ?? [])
@@ -168,6 +189,32 @@ extension WidgetDefinition {
                     }
                 } else {
                     issues.append("\(label): system source needs a 'kind'")
+                }
+            case .query:
+                if spec == "0.1" {
+                    issues.append("\(label): query sources need spec 0.2")
+                }
+                if source.from != "stories" {
+                    issues.append("\(label): query 'from' must be \"stories\"")
+                }
+                if let sort = source.sort, !WidgetQueryVocabulary.sorts.contains(sort) {
+                    issues.append("\(label): sort must be one of \(WidgetQueryVocabulary.sorts.sorted().joined(separator: ", "))")
+                }
+                if let limit = source.limit, !(1...50).contains(limit) {
+                    issues.append("\(label): limit must be between 1 and 50")
+                }
+                if let hours = source.filter?.sinceHours, !(hours >= 1 && hours <= 2160) {
+                    issues.append("\(label): sinceHours must be between 1 and 2160")
+                }
+                for kind in source.filter?.kinds ?? [] where !WidgetQueryVocabulary.kinds.contains(kind) {
+                    issues.append("\(label): unknown kind '\(kind)'")
+                }
+                // A subject written out must be a known one; one built from a setting is checked when it runs.
+                if let subject = source.filter?.subject, !subject.contains("{{"), !WidgetQueryVocabulary.subjects.contains(subject) {
+                    issues.append("\(label): unknown subject '\(subject)'")
+                }
+                if (source.filter?.entities?.count ?? 0) > 20 {
+                    issues.append("\(label): at most 20 entities")
                 }
             case .static, .time:
                 break

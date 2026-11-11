@@ -145,6 +145,30 @@ public struct WidgetSetting: Codable, Sendable, Equatable {
 
 public enum WidgetDataSourceType: String, Codable, Sendable, Equatable {
     case `static`, time, http, rss, system, ai
+    /// Reads from the app's local store. Needs no network permission. Spec 0.2.
+    case query
+}
+
+/// Conditions for a `query` source. Strings may contain `{{ }}` expressions, so a setting can drive them.
+public struct WidgetQueryFilter: Codable, Sendable, Equatable {
+    /// A subject area: "all" or "ai".
+    public let subject: String?
+    /// Only stories tagged with one of these companies, technologies or topics.
+    public let entities: [String]?
+    /// Only stories of these kinds (shipping, announcement, research, ...).
+    public let kinds: [String]?
+    /// Only stories active within this many hours.
+    public let sinceHours: Double?
+    /// Only stories the user saved or marked as favourite.
+    public let saved: Bool?
+
+    public init(subject: String? = nil, entities: [String]? = nil, kinds: [String]? = nil, sinceHours: Double? = nil, saved: Bool? = nil) {
+        self.subject = subject
+        self.entities = entities
+        self.kinds = kinds
+        self.sinceHours = sinceHours
+        self.saved = saved
+    }
 }
 
 public struct WidgetDataSource: Codable, Sendable, Equatable {
@@ -165,11 +189,18 @@ public struct WidgetDataSource: Codable, Sendable, Equatable {
     public let prompt: String?
     public let cache: String?
     public let maxTokens: Int?
+    /// query: which collection to read. Only "stories" exists.
+    public let from: String?
+    /// query: conditions (JSON key: "where").
+    public let filter: WidgetQueryFilter?
+    /// query: "rank" (most important first) or "latest".
+    public let sort: String?
 
     enum CodingKeys: String, CodingKey {
         case type, refresh, value, url, method, headers, path, each, map, limit
-        case kind, input, prompt, cache, maxTokens
+        case kind, input, prompt, cache, maxTokens, from, sort
         case loopVariable = "as"
+        case filter = "where"
     }
 }
 
