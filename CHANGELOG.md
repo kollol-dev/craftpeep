@@ -6,6 +6,8 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- AI widget builder (M6b). Describe a widget in words; the model picks a widget from the gallery and its settings, which are checked against the catalogue, previewed with live data, and added only on approval. Existing widgets can be changed the same way.
+
 - Widget platform, first part (M6a).
   - Several widgets on the desktop at once, each with its own size, settings and position. Schema v7.
   - Rising Repositories widget; `query` sources can now read repositories.

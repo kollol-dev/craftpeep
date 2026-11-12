@@ -1,6 +1,6 @@
 # Widget System
 
-Status: the store-bound `query` source, the runtime, the renderer, the News List and the desktop window are implemented (11 November 2026). Templates-with-params, the gallery and the AI builder are not. Where this document and the code differ, ROADMAP.md (M4c) lists the differences. [SPEC.md](SPEC.md) describes spec v0.1 as currently implemented in `WidgetSpec` and `WidgetExpr`. This document describes how that work is adapted to CraftPeep and what changes in spec v0.2.
+Status: the store-bound `query` source, the runtime, the renderer, the News List and the desktop window are implemented (11 November 2026). The gallery and an AI builder that chooses among bundled widgets and their settings are implemented too (12 November 2026); composing new layouts by AI is not, and is not planned. Where this document and the code differ, ROADMAP.md (M4c) lists the differences. [SPEC.md](SPEC.md) describes spec v0.1 as currently implemented in `WidgetSpec` and `WidgetExpr`. This document describes how that work is adapted to CraftPeep and what changes in spec v0.2.
 
 ## Position
 

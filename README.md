@@ -29,7 +29,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Full-text search over titles and excerpts.
 - Per-source health: a failing feed is listed with its error and never blocks the others.
 - Works offline from the local store.
-- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets. Widgets read the local store;
+- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets, or, with AI on, by describing what you want. Widgets read the local store;
   they cannot fetch, run commands or read files.
 
 ## Repository layout
@@ -55,6 +55,7 @@ Package targets:
 | `WidgetExpr` | Expression interpreter for widget files | In use |
 | `WidgetRuntime` | Resolves a widget's settings and store queries; holds the bundled widgets | In use |
 | `WidgetRender` | Pure render tree and the SwiftUI views that draw it | In use |
+| `WidgetBuilder` | Turns a description into a choice of widget and settings, checked against the catalogue | In use, untested against a live model |
 
 ## Getting started
 

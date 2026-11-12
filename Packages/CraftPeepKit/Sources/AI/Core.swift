@@ -72,6 +72,7 @@ public enum AIFeature: String, Sendable {
     case summary
     case briefing
     case connectionTest = "connection_test"
+    case widgetBuilder = "widget_builder"
 }
 
 public enum ProviderKind: String, Sendable, Codable, CaseIterable {

@@ -1,6 +1,7 @@
 import AppKit
 import Domain
 import SwiftUI
+import WidgetBuilder
 import WidgetRender
 import WidgetSpec
 
@@ -38,6 +39,15 @@ extension WidgetSize {
         case .large: "Large"
         }
     }
+}
+
+/// A widget the AI builder suggested, waiting for the user to accept or discard it.
+struct WidgetSuggestion: Equatable {
+    let proposal: WidgetProposal
+    let definition: WidgetDefinition
+    let preview: DesktopWidgetState
+    /// The widget this would change, when the request was an edit.
+    let replacing: String?
 }
 
 /// Owns the desktop-level windows, one per widget. These are ordinary AppKit windows placed just above

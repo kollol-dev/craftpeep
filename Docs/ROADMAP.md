@@ -214,14 +214,21 @@ Not built, from the original M6 list:
 - **A separate My Widgets screen.** The Widgets tab in Settings does that job.
 - **Importing a widget file from disk.** The loader and validator exist; there is no file picker yet. Worth adding with the builder, since both need an install-and-review step.
 
-#### M6b AI widget builder — next
+#### M6b AI widget builder — built; not yet run against a real model
 
-- [ ] Describe a widget in words; the model chooses a bundled widget and its settings, or says nothing fits
-- [ ] Validate against the chosen widget's declared settings; preview; install on approval
-- [ ] Conversational changes that edit settings
-- [ ] Optional AI classification refinement for unlabelled top stories
+- [x] Describe a widget in words; the model chooses a widget from the gallery, a size, and values for the settings that widget declares, or says nothing fits
+- [x] Every part of the answer is checked against the catalogue: an invented widget is rejected (with one corrective retry), and an unknown setting or disallowed value is dropped and shown to the user as left out
+- [x] A live preview with real data, then Add to Desktop or Discard; nothing is installed without approval
+- [x] Change with Words on an existing widget; what the request does not mention is kept
+- [x] Without AI, the gallery and the ordinary settings controls do everything the builder does
 
-This depends on the AI layer, which has still not been run against a real model.
+Checked on 12 November 2026: 236 package tests pass, the builder's with recorded replies.
+
+Not checked: **the builder has never spoken to a real model**, like the rest of the AI layer, so how well a model follows the catalogue is unknown. The flow in the Widgets tab has not been operated.
+
+What the builder is, and is not: with two widgets and three settings between them, it is a natural-language front end to choices the gallery already offers in two clicks. Its value grows with the catalogue. It does not compose layouts or write widget files, by design.
+
+Not built: optional AI classification refinement for unlabelled stories. It should wait until the AI layer has been seen working.
 
 ### M7 Desktop experience
 

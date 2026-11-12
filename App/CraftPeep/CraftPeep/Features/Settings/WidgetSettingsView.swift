@@ -1,5 +1,6 @@
 import Domain
 import SwiftUI
+import WidgetBuilder
 import WidgetSpec
 
 /// Widgets on the desktop, and the gallery to add more from. Each widget's controls are generated
@@ -7,16 +8,61 @@ import WidgetSpec
 struct WidgetSettingsView: View {
     let model: AppModel
     @State private var previewing: String?
+    @State private var request = ""
+    @State private var editing: String?
 
     var body: some View {
         Form {
+            Section("Describe a widget") {
+                if model.isAIEnabled {
+                    HStack {
+                        TextField(editing == nil ? "For example: the top AI stories, small" : "What should change?", text: $request)
+                            .onSubmit(build)
+                        Button(model.isBuildingWidget ? "Thinking…" : (editing == nil ? "Suggest" : "Suggest Change"), action: build)
+                            .disabled(model.isBuildingWidget || request.trimmingCharacters(in: .whitespaces).isEmpty)
+                        if editing != nil {
+                            Button("Cancel") {
+                                editing = nil
+                                request = ""
+                            }
+                        }
+                    }
+                    if let editing, let item = model.widgets.first(where: { $0.id == editing }) {
+                        Text("Changing your \(item.definition.name) widget.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let message = model.widgetBuilderMessage {
+                        Text(message)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                    }
+                    if let suggestion = model.widgetSuggestion {
+                        SuggestionView(suggestion: suggestion, model: model) {
+                            editing = nil
+                            request = ""
+                        }
+                    }
+                    Text("Your words and the list of available widgets are sent to your AI provider. It can only choose among the widgets in the gallery and their settings; it cannot write a widget or run anything. Nothing is added until you say so.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                } else {
+                    Text("Switch on AI in the AI tab to set up a widget by describing it. You can always add one from the gallery below without AI.")
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section("On your desktop") {
                 if model.widgets.isEmpty {
                     Text("No widgets yet. Add one from the gallery below.")
                         .foregroundStyle(.secondary)
                 }
                 ForEach(model.widgets) { item in
-                    WidgetInstanceRow(item: item, model: model)
+                    WidgetInstanceRow(item: item, model: model, onChangeWithWords: model.isAIEnabled ? {
+                        editing = item.id
+                        request = ""
+                        model.discardWidgetSuggestion()
+                    } : nil)
                 }
             }
 
@@ -57,11 +103,56 @@ struct WidgetSettingsView: View {
         .formStyle(.grouped)
         .task { await model.loadGalleryPreviews() }
     }
+
+    private func build() {
+        let words = request
+        guard !words.trimmingCharacters(in: .whitespaces).isEmpty else { return }
+        Task { await model.suggestWidget(for: words, editing: editing) }
+    }
+}
+
+/// A suggestion from the builder: what it chose, what it could not do, a live preview, and the decision.
+private struct SuggestionView: View {
+    let suggestion: WidgetSuggestion
+    let model: AppModel
+    let onDone: () -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Label("\(suggestion.definition.name), \(suggestion.proposal.size.label.lowercased())", systemImage: "sparkles")
+                .font(.headline)
+            Text(suggestion.proposal.explanation)
+            if let unmet = suggestion.proposal.unmet {
+                Label(unmet, systemImage: "exclamationmark.circle")
+                    .foregroundStyle(.secondary)
+            }
+            ForEach(suggestion.proposal.ignored, id: \.self) { note in
+                Text("Left out: \(note).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            DesktopWidgetContent(state: suggestion.preview, name: suggestion.definition.name, perform: { _ in })
+                .frame(width: suggestion.proposal.size.contentSize.width, height: min(suggestion.proposal.size.contentSize.height, 400))
+                .accessibilityLabel("Preview of the suggested widget")
+            HStack {
+                Button(suggestion.replacing == nil ? "Add to Desktop" : "Apply Change") {
+                    Task { await model.acceptWidgetSuggestion() }
+                    onDone()
+                }
+                .buttonStyle(.borderedProminent)
+                Button("Discard") {
+                    model.discardWidgetSuggestion()
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
 }
 
 private struct WidgetInstanceRow: View {
     let item: DesktopWidgetItem
     let model: AppModel
+    var onChangeWithWords: (() -> Void)?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
@@ -69,6 +160,9 @@ private struct WidgetInstanceRow: View {
                 Text(item.definition.name)
                     .font(.headline)
                 Spacer()
+                if let onChangeWithWords {
+                    Button("Change with Words…", action: onChangeWithWords)
+                }
                 Button("Remove", role: .destructive) { Task { await model.removeWidget(item.id) } }
             }
             Picker("Size", selection: Binding(

@@ -6,6 +6,7 @@ import Ingestion
 import Intelligence
 import Observation
 import Persistence
+import WidgetBuilder
 import WidgetExpr
 import WidgetRender
 import WidgetRuntime
@@ -106,6 +107,11 @@ final class AppModel {
     private(set) var gallery: [WidgetDefinition] = []
     private(set) var galleryPreviews: [String: DesktopWidgetState] = [:]
     private var widgetStoryIDs: [String: Int64] = [:]
+
+    // Widget builder (AI). A suggestion waits here until the user accepts or discards it.
+    private(set) var widgetSuggestion: WidgetSuggestion?
+    private(set) var widgetBuilderMessage: String?
+    private(set) var isBuildingWidget = false
     private let widgetController = DesktopWidgetController()
 
     var section = SidebarSection.overview {
@@ -142,6 +148,7 @@ final class AppModel {
         let github: GitHubService
         let summaries: SummaryService
         let briefings: BriefingService
+        let widgetBuilder: WidgetBuilder
     }
 
     private let services: Services?
@@ -182,7 +189,8 @@ final class AppModel {
                 widgetInstances: GRDBWidgetInstanceRepository(database: database),
                 github: GitHubService(http: URLSessionHTTPClient(), store: repositories),
                 summaries: SummaryService(gateway: gateway, clusters: clusters, summaries: GRDBSummaryRepository(database: database)),
-                briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database))
+                briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database)),
+                widgetBuilder: WidgetBuilder(gateway: gateway)
             )
         } catch {
             services = nil
@@ -664,6 +672,66 @@ final class AppModel {
             size: WidgetSize(rawValue: defaults.string(forKey: "widget.newsList.size") ?? "")?.rawValue ?? "medium",
             x: origin.count == 2 ? origin[0] : nil, y: origin.count == 2 ? origin[1] : nil, createdAt: Date()
         ))
+    }
+
+    // MARK: - Widget builder
+
+    /// Asks the model to choose a widget and settings for a description. `editing` is the widget being
+    /// changed, if any. Nothing is installed here: the result waits in `widgetSuggestion`.
+    func suggestWidget(for request: String, editing instanceID: String? = nil) async {
+        guard let services, !isBuildingWidget else { return }
+        isBuildingWidget = true
+        widgetBuilderMessage = nil
+        widgetSuggestion = nil
+        defer { isBuildingWidget = false }
+        let current = instanceID.flatMap { id in widgets.first { $0.id == id }?.instance }
+        do {
+            switch try await services.widgetBuilder.propose(request: request, catalogue: gallery, current: current) {
+            case .nothingFits(let reason):
+                widgetBuilderMessage = "No widget does that yet. \(reason)"
+            case .proposal(let proposal):
+                guard let definition = gallery.first(where: { $0.id == proposal.widgetID }) else {
+                    widgetBuilderMessage = "The suggestion named a widget this version does not have."
+                    return
+                }
+                let (preview, _) = await resolve(definition, settings: proposal.settings, size: proposal.size)
+                widgetSuggestion = WidgetSuggestion(proposal: proposal, definition: definition, preview: preview, replacing: current?.id)
+            }
+        } catch {
+            widgetBuilderMessage = Self.message(for: error)
+        }
+        await refreshAIStatus()
+    }
+
+    func acceptWidgetSuggestion() async {
+        guard let services, let suggestion = widgetSuggestion else { return }
+        widgetSuggestion = nil
+        if let id = suggestion.replacing, let existing = widgets.first(where: { $0.id == id })?.instance {
+            if existing.widgetID == suggestion.proposal.widgetID {
+                var updated = existing
+                updated.settings = suggestion.proposal.settings
+                updated.size = suggestion.proposal.size.rawValue
+                try? await services.widgetInstances.save(updated)
+            } else {
+                // A different kind of widget takes the old one's place on the desktop.
+                try? await services.widgetInstances.delete(instanceID: id)
+                try? await services.widgetInstances.save(WidgetInstance(
+                    id: UUID().uuidString, widgetID: suggestion.proposal.widgetID, settings: suggestion.proposal.settings,
+                    size: suggestion.proposal.size.rawValue, x: existing.x, y: existing.y, createdAt: Date()
+                ))
+            }
+        } else {
+            try? await services.widgetInstances.save(WidgetInstance(
+                id: UUID().uuidString, widgetID: suggestion.proposal.widgetID, settings: suggestion.proposal.settings,
+                size: suggestion.proposal.size.rawValue, createdAt: Date()
+            ))
+        }
+        await refreshWidgets()
+    }
+
+    func discardWidgetSuggestion() {
+        widgetSuggestion = nil
+        widgetBuilderMessage = nil
     }
 
     func perform(_ action: RenderAction) {
