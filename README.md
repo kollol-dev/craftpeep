@@ -8,7 +8,7 @@ milestones add briefings and desktop widgets. Local-first, no account, sandboxed
 
 **Status:** early development. The app fetches 33 feeds, the Hacker News front page and GitHub's search API, groups reports of the
 same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
-Optional AI summaries and a daily briefing are built but have not yet been run against a real model. One desktop widget, a News List, is included and off by default.
+Optional AI summaries and a daily briefing are built but have not yet been run against a real model. Two desktop widgets are included (News List and Rising Repositories); none is on the desktop until you add it.
 See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 
 ## What works today
@@ -29,7 +29,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Full-text search over titles and excerpts.
 - Per-source health: a failing feed is listed with its error and never blocks the others.
 - Works offline from the local store.
-- A News List desktop widget, defined as a declarative JSON file and drawn natively. Widgets read the local store;
+- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets. Widgets read the local store;
   they cannot fetch, run commands or read files.
 
 ## Repository layout

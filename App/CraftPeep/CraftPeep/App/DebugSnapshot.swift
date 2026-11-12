@@ -1,6 +1,7 @@
 #if DEBUG
 import AppKit
 import Domain
+import WidgetSpec
 import SwiftUI
 
 /// Development aid: lets a build photograph its own windows so the UI can be checked without
@@ -16,7 +17,6 @@ enum DebugSnapshot {
     static func scheduleIfRequested(model: AppModel) {
         guard let value = ProcessInfo.processInfo.environment["CRAFTPEEP_SNAPSHOT"] else { return }
         let options = Set(value.split(separator: ",").map(String.init))
-        if options.contains("panels") { WidgetPreferences.alwaysResolve = true }
 
         Task {
             try? await Task.sleep(for: .seconds(4))
@@ -29,9 +29,14 @@ enum DebugSnapshot {
                 model.selectedRepositoryID = model.repositories.first?.id
             }
             if options.contains("panels") {
-                await model.refreshWidget()
-                show(DesktopWidgetView(model: model), title: "Widget", size: WidgetPreferences.current().contentSize)
-                show(WidgetSettingsView(model: model), title: "Widget Settings", size: NSSize(width: 640, height: 420))
+                await model.loadGalleryPreviews()
+                for definition in model.gallery {
+                    show(
+                        DesktopWidgetContent(state: model.galleryPreviews[definition.id] ?? .loading, name: definition.name, perform: { _ in }),
+                        title: "Widget \(definition.name)", size: WidgetSize.medium.contentSize
+                    )
+                }
+                show(WidgetSettingsView(model: model), title: "Widget Settings", size: NSSize(width: 640, height: 560))
                 show(SettingsView(model: model), title: "Settings", size: NSSize(width: 640, height: 480))
                 show(PulseView(model: model), title: "Pulse", size: NSSize(width: 360, height: 420))
                 show(AISettingsView(model: model), title: "AI Settings", size: NSSize(width: 640, height: 640))

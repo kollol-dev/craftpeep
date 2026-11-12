@@ -6,6 +6,11 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Widget platform, first part (M6a).
+  - Several widgets on the desktop at once, each with its own size, settings and position. Schema v7.
+  - Rising Repositories widget; `query` sources can now read repositories.
+  - Widgets tab in Settings with a gallery, live previews and settings controls generated from each widget's definition.
+
 - Developer Radar (M5a).
   - Fast-growing GitHub repositories from the official search API, with no token needed.
   - Star growth measured from CraftPeep's own daily readings; estimates are labelled as estimates.

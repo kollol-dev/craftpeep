@@ -218,6 +218,20 @@ public final class AppDatabase: Sendable {
                 """)
         }
 
+        migrator.registerMigration("v7-widget-instances") { db in
+            try db.execute(sql: """
+                CREATE TABLE widget_instance (
+                  id         TEXT PRIMARY KEY,
+                  widget_id  TEXT NOT NULL,
+                  settings   TEXT NOT NULL DEFAULT '{}',
+                  size       TEXT NOT NULL,
+                  x          REAL,
+                  y          REAL,
+                  created_at INTEGER NOT NULL
+                );
+                """)
+        }
+
         return migrator
     }
 }

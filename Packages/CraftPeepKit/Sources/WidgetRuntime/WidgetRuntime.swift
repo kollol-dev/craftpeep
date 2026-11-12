@@ -9,6 +9,12 @@ public protocol WidgetStorySource: Sendable {
     func stories(_ filter: StoryFilter, ranked: Bool, limit: Int) async throws -> [ClusterSummary]
 }
 
+/// Where a widget's repository queries get their data.
+public protocol WidgetRepositorySource: Sendable {
+    /// Fastest-growing first. `language` nil means any.
+    func repositories(language: String?, limit: Int) async throws -> [RisingRepository]
+}
+
 /// Everything a widget needs to draw itself at one moment. Inert data: holding it does no work.
 public struct WidgetSnapshot: Sendable, Equatable {
     /// `data`, `settings` and `now`, as the widget's expressions see them.
@@ -16,17 +22,32 @@ public struct WidgetSnapshot: Sendable, Equatable {
     public var asOf: Date
     /// Problems found while resolving, in words. A widget with issues still draws what it can.
     public var issues: [String]
-    /// True when the widget asked the store for stories and none matched.
-    public var hasNoStories: Bool
+    /// True when the widget asked the store for something and nothing matched.
+    public var hasNoResults: Bool
 
     public var scope: ExprScope { ExprScope(variables) }
 }
 
 /// The widgets shipped with the app. Each is an ordinary widget file; its settings are what a user adjusts.
 public enum BundledWidgets {
+    static let files = ["news-list", "repository-list"]
+
+    /// Every bundled widget, in the order the gallery shows them.
+    public static func all() throws -> [WidgetDefinition] {
+        try files.map(load)
+    }
+
     public static func newsList() throws -> WidgetDefinition {
-        guard let url = Bundle.module.url(forResource: "news-list.widget", withExtension: "json") else {
-            throw WidgetSpecError.malformed("the bundled News List widget is missing")
+        try load("news-list")
+    }
+
+    public static func repositoryList() throws -> WidgetDefinition {
+        try load("repository-list")
+    }
+
+    private static func load(_ name: String) throws -> WidgetDefinition {
+        guard let url = Bundle.module.url(forResource: "\(name).widget", withExtension: "json") else {
+            throw WidgetSpecError.malformed("the bundled widget '\(name)' is missing")
         }
         return try WidgetSpecLoader.load(from: url)
     }
@@ -60,10 +81,22 @@ public enum WidgetRuntime {
         return values
     }
 
+    /// Converts stored setting values into what expressions read.
+    public static func values(_ settings: [String: WidgetSettingValue]) -> [String: ExprValue] {
+        settings.mapValues { value in
+            switch value {
+            case .bool(let flag): .bool(flag)
+            case .number(let number): .number(number)
+            case .string(let text): .string(text)
+            }
+        }
+    }
+
     public static func resolve(
         _ definition: WidgetDefinition,
         settings overrides: [String: ExprValue] = [:],
         source: any WidgetStorySource,
+        repositories: (any WidgetRepositorySource)? = nil,
         subjects: [String: StoryFilter.Subject],
         now: Date = Date()
     ) async -> WidgetSnapshot {
@@ -82,6 +115,25 @@ public enum WidgetRuntime {
                 data[name] = dataSource.value.map(exprValue) ?? .null
             case .time:
                 data[name] = .object(["date": .date(now)])
+            case .query where dataSource.from == "repositories":
+                queried = true
+                do {
+                    guard let repositories else { throw QueryError(message: "repositories are not available here") }
+                    let limit = min(max(dataSource.limit ?? defaultQueryLimit, 1), 50)
+                    let language: String?
+                    if let template = dataSource.filter?.language {
+                        let text = try Template.parse(template).render(in: scope, context: context).trimmingCharacters(in: .whitespaces)
+                        language = text.isEmpty ? nil : text
+                    } else {
+                        language = nil
+                    }
+                    let found = try await repositories.repositories(language: language, limit: limit)
+                    foundStories = foundStories || !found.isEmpty
+                    data[name] = .array(found.prefix(limit).map { value($0, now: now) })
+                } catch {
+                    data[name] = .array([])
+                    issues.append("data.\(name): \((error as? QueryError)?.message ?? "could not read repositories")")
+                }
             case .query:
                 queried = true
                 do {
@@ -105,7 +157,7 @@ public enum WidgetRuntime {
             variables: ["data": .object(data), "settings": .object(settings), "now": .date(now)],
             asOf: now,
             issues: issues,
-            hasNoStories: queried && !foundStories
+            hasNoResults: queried && !foundStories
         )
     }
 
@@ -169,6 +221,39 @@ public enum WidgetRuntime {
             "isRead": .bool(story.isRead),
             "isSaved": .bool(story.isSaved)
         ])
+    }
+
+    /// What a widget's expressions can read about a repository.
+    static func value(_ item: RisingRepository, now: Date) -> ExprValue {
+        let repository = item.repository
+        let parts = repository.fullName.split(separator: "/", maxSplits: 1).map(String.init)
+        return .object([
+            "id": .number(Double(repository.id)),
+            "fullName": .string(repository.fullName),
+            "owner": .string(parts.first ?? ""),
+            "name": .string(parts.last ?? repository.fullName),
+            "description": repository.description.map(ExprValue.string) ?? .null,
+            "url": .string(repository.url),
+            "language": repository.language.map(ExprValue.string) ?? .null,
+            "stars": .number(Double(repository.stars)),
+            "starsPerDay": .number(item.starsPerDay.rounded()),
+            "growth": .string(growthText(item)),
+            "isMeasured": .bool({ if case .measured = item.basis { true } else { false } }())
+        ])
+    }
+
+    /// A short growth statement that still says whether it is a measurement or an estimate.
+    static func growthText(_ item: RisingRepository) -> String {
+        func compact(_ number: Int) -> String {
+            number >= 10_000 ? "\(number / 1000)k" : number >= 1000 ? String(format: "%.1fk", Double(number) / 1000) : "\(number)"
+        }
+        switch item.basis {
+        case .measured(let gained, let overHours):
+            let period = overHours < 36 ? "\(Int(overHours.rounded()))h" : "\(Int((overHours / 24).rounded()))d"
+            return "+\(compact(gained)) stars in \(period)"
+        case .sinceCreation(let days):
+            return "\(compact(item.repository.stars)) stars in \(Int(max(days, 1).rounded()))d, est."
+        }
     }
 
     static func kindLabel(_ kind: StoryKind) -> String {

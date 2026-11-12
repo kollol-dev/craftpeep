@@ -101,8 +101,10 @@ final class AppModel {
         repositories.first { $0.id == selectedRepositoryID }
     }
 
-    // Desktop widget
-    private(set) var widget = DesktopWidgetState.loading
+    // Desktop widgets
+    private(set) var widgets: [DesktopWidgetItem] = []
+    private(set) var gallery: [WidgetDefinition] = []
+    private(set) var galleryPreviews: [String: DesktopWidgetState] = [:]
     private var widgetStoryIDs: [String: Int64] = [:]
     private let widgetController = DesktopWidgetController()
 
@@ -136,6 +138,7 @@ final class AppModel {
         let gateway: AIGateway
         let usage: any AIUsageRepository
         let repositories: any RepositoryStore
+        let widgetInstances: any WidgetInstanceRepository
         let github: GitHubService
         let summaries: SummaryService
         let briefings: BriefingService
@@ -176,6 +179,7 @@ final class AppModel {
                 gateway: gateway,
                 usage: usage,
                 repositories: repositories,
+                widgetInstances: GRDBWidgetInstanceRepository(database: database),
                 github: GitHubService(http: URLSessionHTTPClient(), store: repositories),
                 summaries: SummaryService(gateway: gateway, clusters: clusters, summaries: GRDBSummaryRepository(database: database)),
                 briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database))
@@ -326,7 +330,7 @@ final class AppModel {
         } catch {
             loadError = "Could not read stored stories."
         }
-        await refreshWidget()
+        await refreshWidgets()
     }
 
     private static func makeDigest(_ stories: [ClusterSummary]) -> DailyDigest? {
@@ -451,8 +455,9 @@ final class AppModel {
     /// requests a few times a day; nothing is sent for stories or AI here.
     func refreshRadar() async {
         guard let services else { return }
-        if let report = try? await services.github.refreshIfDue(), report.ran, section == .radar {
-            await reloadRadar()
+        if let report = try? await services.github.refreshIfDue(), report.ran {
+            if section == .radar { await reloadRadar() }
+            await refreshWidgets()
         }
     }
 
@@ -508,7 +513,7 @@ final class AppModel {
         return nil
     }
 
-    // MARK: - Desktop widget
+    // MARK: - Desktop widgets
 
     /// Gives a widget the same stories, ranking and mutes the main window uses.
     private struct StoreStories: WidgetStorySource {
@@ -522,51 +527,150 @@ final class AppModel {
         }
     }
 
-    /// Recomputes what the desktop widget shows and makes its window match the user's choice.
-    func refreshWidget() async {
-        let preferences = WidgetPreferences.current()
-        widgetController.sync(model: self, preferences: preferences)
-        guard preferences.isEnabled || WidgetPreferences.alwaysResolve, let services else { return }
-        do {
-            let definition = try BundledWidgets.newsList()
-            let snapshot = await WidgetRuntime.resolve(
-                definition,
-                settings: ["subject": .string(preferences.subject), "showSources": .bool(preferences.showSources)],
-                source: StoreStories(intelligence: services.intelligence),
-                subjects: ["ai": Subjects.ai]
+    private struct StoreRepositories: WidgetRepositorySource {
+        let store: any RepositoryStore
+
+        func repositories(language: String?, limit: Int) async throws -> [RisingRepository] {
+            let now = Date()
+            let histories = try await store.histories(
+                seenSince: now.addingTimeInterval(-3 * 86_400), baselineSince: now.addingTimeInterval(-7 * 86_400)
             )
-            // Remember which story each link belongs to, so opening one can mark it read.
-            var ids: [String: Int64] = [:]
-            if case .array(let stories)? = snapshot.scope.variables["data"].flatMap({ value -> ExprValue? in
-                if case .object(let data) = value { return data["stories"] }
-                return nil
-            }) {
-                for case .object(let story) in stories {
-                    if case .string(let url)? = story["url"], case .number(let id)? = story["id"] { ids[url] = Int64(id) }
+            return Array(RepositoryRanker.rank(histories, now: now).filter { language == nil || $0.repository.language == language }.prefix(limit))
+        }
+    }
+
+    private func resolve(_ definition: WidgetDefinition, settings: [String: WidgetSettingValue], size: WidgetSize) async -> (DesktopWidgetState, [String: Int64]) {
+        guard let services else { return (.failed("CraftPeep is not running."), [:]) }
+        let snapshot = await WidgetRuntime.resolve(
+            definition,
+            settings: WidgetRuntime.values(settings),
+            source: StoreStories(intelligence: services.intelligence),
+            repositories: StoreRepositories(store: services.repositories),
+            subjects: ["ai": Subjects.ai]
+        )
+        // Remember which story each link belongs to, so opening one can mark it read.
+        var links: [String: Int64] = [:]
+        if case .object(let data)? = snapshot.variables["data"] {
+            for case .array(let rows) in data.values {
+                for case .object(let row) in rows {
+                    if case .string(let url)? = row["url"], case .number(let id)? = row["id"], row["headline"] != nil { links[url] = Int64(id) }
                 }
             }
-            widgetStoryIDs = ids
-
-            let result = RenderTree.build(definition, size: preferences.size, scope: snapshot.scope)
-            if let issue = snapshot.issues.first ?? result.issues.first {
-                widget = .failed(issue)
-            } else if snapshot.hasNoStories {
-                widget = .empty
-            } else if let root = result.root {
-                widget = .ready(root, asOf: lastUpdated)
-            } else {
-                widget = .failed("The widget has nothing to draw.")
-            }
-        } catch {
-            widget = .failed("The widget could not be loaded.")
         }
+        let result = RenderTree.build(definition, size: size, scope: snapshot.scope)
+        let usesRepositories = definition.data?.values.contains { $0.from == "repositories" } == true
+        if let issue = snapshot.issues.first ?? result.issues.first {
+            return (.failed(issue), links)
+        } else if snapshot.hasNoResults {
+            return (.empty(usesRepositories ? "No repositories match yet." : "No stories in the last three days."), links)
+        } else if let root = result.root {
+            var asOf = lastUpdated
+            if usesRepositories {
+                let fetched = await services.github.lastSuccess()
+                asOf = fetched
+            }
+            return (.ready(root, asOf: asOf), links)
+        }
+        return (.failed("The widget has nothing to draw."), links)
+    }
+
+    /// Recomputes every desktop widget and makes the windows on screen match what is stored.
+    func refreshWidgets() async {
+        guard let services else { return }
+        if gallery.isEmpty { gallery = (try? BundledWidgets.all()) ?? [] }
+        await migrateLegacyWidgetPreference()
+
+        let instances = (try? await services.widgetInstances.allInstances()) ?? []
+        var items: [DesktopWidgetItem] = []
+        var links: [String: Int64] = [:]
+        for instance in instances {
+            // A widget whose definition this version does not ship is skipped, not deleted.
+            guard let definition = gallery.first(where: { $0.id == instance.widgetID }) else { continue }
+            let size = WidgetSize(rawValue: instance.size) ?? .medium
+            let (state, found) = await resolve(definition, settings: instance.settings, size: size)
+            links.merge(found) { first, _ in first }
+            items.append(DesktopWidgetItem(instance: instance, definition: definition, state: state))
+        }
+        widgets = items
+        widgetStoryIDs = links
+        widgetController.sync(model: self, items: items)
+    }
+
+    /// Draws each gallery widget once with its default settings, for the previews in Settings.
+    func loadGalleryPreviews() async {
+        if gallery.isEmpty { gallery = (try? BundledWidgets.all()) ?? [] }
+        var previews: [String: DesktopWidgetState] = [:]
+        for definition in gallery {
+            previews[definition.id] = await resolve(definition, settings: [:], size: .medium).0
+        }
+        galleryPreviews = previews
+    }
+
+    func addWidget(_ definition: WidgetDefinition) async {
+        guard let services else { return }
+        try? await services.widgetInstances.save(
+            WidgetInstance(id: UUID().uuidString, widgetID: definition.id, size: WidgetSize.medium.rawValue, createdAt: Date())
+        )
+        await refreshWidgets()
+    }
+
+    func removeWidget(_ id: String) async {
+        guard let services else { return }
+        try? await services.widgetInstances.delete(instanceID: id)
+        await refreshWidgets()
+    }
+
+    private func updateWidget(_ id: String, refresh: Bool = true, _ change: (inout WidgetInstance) -> Void) async {
+        guard let services, var instance = widgets.first(where: { $0.id == id })?.instance else { return }
+        change(&instance)
+        try? await services.widgetInstances.save(instance)
+        if refresh {
+            await refreshWidgets()
+        } else if let index = widgets.firstIndex(where: { $0.id == id }) {
+            widgets[index].instance = instance
+        }
+    }
+
+    func setWidgetSize(_ id: String, _ size: WidgetSize) async {
+        await updateWidget(id) { $0.size = size.rawValue }
+    }
+
+    func setWidgetSetting(_ id: String, key: String, value: WidgetSettingValue) async {
+        await updateWidget(id) { $0.settings[key] = value }
+    }
+
+    /// Called when the user has dragged a widget. Stored quietly; nothing needs redrawing.
+    func widgetMoved(_ id: String, to origin: CGPoint) async {
+        guard let current = widgets.first(where: { $0.id == id })?.instance,
+              current.x != Double(origin.x) || current.y != Double(origin.y) else { return }
+        await updateWidget(id, refresh: false) {
+            $0.x = Double(origin.x)
+            $0.y = Double(origin.y)
+        }
+    }
+
+    /// The first widget build kept one widget's choices in preferences. Carry them over once.
+    private func migrateLegacyWidgetPreference() async {
+        let defaults = UserDefaults.standard
+        guard let services, defaults.bool(forKey: "widget.newsList.enabled") else { return }
+        defaults.set(false, forKey: "widget.newsList.enabled")
+        let origin = (defaults.string(forKey: "widget.newsList.origin") ?? "").split(separator: ",").compactMap { Double($0) }
+        try? await services.widgetInstances.save(WidgetInstance(
+            id: UUID().uuidString, widgetID: "com.craftpeep.news-list",
+            settings: [
+                "subject": .string(defaults.string(forKey: "widget.newsList.subject") == "ai" ? "ai" : "all"),
+                "showSources": .bool(defaults.object(forKey: "widget.newsList.showSources") as? Bool ?? true)
+            ],
+            size: WidgetSize(rawValue: defaults.string(forKey: "widget.newsList.size") ?? "")?.rawValue ?? "medium",
+            x: origin.count == 2 ? origin[0] : nil, y: origin.count == 2 ? origin[1] : nil, createdAt: Date()
+        ))
     }
 
     func perform(_ action: RenderAction) {
         switch action {
         case .openURL(let url):
             Self.openWebLink(url)
-            if let id = widgetStoryIDs[url] { Task { await markRead(id); await refreshWidget() } }
+            if let id = widgetStoryIDs[url] { Task { await markRead(id); await refreshWidgets() } }
         case .copy(let text):
             NSPasteboard.general.clearContents()
             NSPasteboard.general.setString(text, forType: .string)

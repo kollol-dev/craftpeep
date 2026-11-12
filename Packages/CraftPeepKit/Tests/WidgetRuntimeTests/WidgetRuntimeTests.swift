@@ -72,7 +72,7 @@ let subjects = ["ai": Subjects.ai]
         let source = FakeStories((1...12).map { story(Int64($0), "Headline \($0)", sources: $0 == 1 ? ["Blog", "Wire", "HN"] : ["Wire"], kind: $0 == 2 ? .shipping : nil) })
         let snapshot = await WidgetRuntime.resolve(definition, source: source, subjects: subjects, now: now)
         #expect(snapshot.issues.isEmpty)
-        #expect(!snapshot.hasNoStories)
+        #expect(!snapshot.hasNoResults)
 
         let request = try #require(await source.requests.first)
         #expect(request.ranked)
@@ -115,7 +115,7 @@ let subjects = ["ai": Subjects.ai]
 
     @Test func anEmptyStoreIsReportedNotHidden() async throws {
         let snapshot = await WidgetRuntime.resolve(try BundledWidgets.newsList(), source: FakeStories([]), subjects: subjects, now: now)
-        #expect(snapshot.hasNoStories)
+        #expect(snapshot.hasNoResults)
         #expect(snapshot.issues.isEmpty)
     }
 
@@ -124,7 +124,83 @@ let subjects = ["ai": Subjects.ai]
         await source.fail()
         let snapshot = await WidgetRuntime.resolve(try BundledWidgets.newsList(), source: source, subjects: subjects, now: now)
         #expect(snapshot.issues == ["data.stories: could not read stories"])
-        #expect(snapshot.hasNoStories)
+        #expect(snapshot.hasNoResults)
+    }
+}
+
+struct FakeRepositories: WidgetRepositorySource {
+    var items: [RisingRepository]
+
+    func repositories(language: String?, limit: Int) async throws -> [RisingRepository] {
+        Array(items.filter { language == nil || $0.repository.language == language }.prefix(limit))
+    }
+}
+
+func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured: Bool) -> RisingRepository {
+    RisingRepository(
+        repository: Repository(id: id, fullName: name, description: "About \(name)", url: "https://github.com/\(name)", language: language, stars: stars),
+        starsPerDay: measured ? 300 : Double(stars) / 10,
+        basis: measured ? .measured(gained: 600, overHours: 48) : .sinceCreation(days: 10)
+    )
+}
+
+@Suite struct BundledRepositoryListTests {
+    let items = [
+        rising(1, "northwind/orion-runtime", language: "Rust", stars: 28_400, measured: false),
+        rising(2, "helix-labs/kestrel", language: "Swift", stars: 5000, measured: true),
+        rising(3, "o/three", language: "Rust", stars: 900, measured: false)
+    ]
+
+    @Test func everyBundledWidgetIsValidAndNeedsNoPermissions() throws {
+        let all = try BundledWidgets.all()
+        #expect(all.map(\.id) == ["com.craftpeep.news-list", "com.craftpeep.repository-list"])
+        for definition in all {
+            #expect(definition.validate().isEmpty, "\(definition.id)")
+            #expect(definition.permissions == nil)
+            #expect(definition.data?.values.allSatisfy { $0.type == .query } == true)
+            #expect(definition.description?.isEmpty == false)
+        }
+    }
+
+    @Test func rendersRepositoriesWithGrowthMarkedAsMeasuredOrEstimated() async throws {
+        let definition = try BundledWidgets.repositoryList()
+        let snapshot = await WidgetRuntime.resolve(
+            definition, source: FakeStories([]), repositories: FakeRepositories(items: items), subjects: subjects, now: now
+        )
+        #expect(snapshot.issues.isEmpty)
+        #expect(!snapshot.hasNoResults)
+
+        let result = RenderTree.build(definition, size: .medium, scope: snapshot.scope, context: ExprContext(now: now))
+        #expect(result.issues.isEmpty)
+        let lines = texts(result.root)
+        #expect(lines.first == "Rising on GitHub")
+        #expect(lines.contains("northwind/orion-runtime"))
+        #expect(lines.contains { $0.contains("Rust") && $0.contains("28k stars in 10d, est.") })
+        #expect(lines.contains { $0.contains("Swift") && $0.contains("+600 stars in 2d") })
+
+        let small = RenderTree.build(definition, size: .small, scope: snapshot.scope, context: ExprContext(now: now))
+        #expect(texts(small.root).filter { $0.contains("/") }.count == 3)
+    }
+
+    @Test func theLanguageSettingFiltersAndBlankMeansAny() async throws {
+        let definition = try BundledWidgets.repositoryList()
+        let source = FakeRepositories(items: items)
+        let rust = await WidgetRuntime.resolve(definition, settings: ["language": "Rust"], source: FakeStories([]), repositories: source, subjects: subjects, now: now)
+        let rustLines = texts(RenderTree.build(definition, size: .large, scope: rust.scope).root)
+        #expect(rustLines.contains("northwind/orion-runtime") && rustLines.contains("o/three"))
+        #expect(!rustLines.contains("helix-labs/kestrel"))
+
+        let none = await WidgetRuntime.resolve(definition, settings: ["language": "COBOL"], source: FakeStories([]), repositories: source, subjects: subjects, now: now)
+        #expect(none.hasNoResults)
+    }
+
+    @Test func withoutARepositorySourceItReportsAnIssue() async throws {
+        let snapshot = await WidgetRuntime.resolve(try BundledWidgets.repositoryList(), source: FakeStories([]), subjects: subjects, now: now)
+        #expect(snapshot.issues == ["data.repos: repositories are not available here"])
+    }
+
+    @Test func storedSettingValuesConvert() {
+        #expect(WidgetRuntime.values(["a": .bool(true), "b": .number(3), "c": .string("x")]) == ["a": true, "b": 3, "c": "x"])
     }
 }
 
@@ -183,7 +259,7 @@ let subjects = ["ai": Subjects.ai]
         #expect(snapshot.issues.count == 3)
         #expect(snapshot.issues.allSatisfy { $0.contains("not available") })
         #expect(await source.requests.isEmpty)
-        #expect(!snapshot.hasNoStories)                                         // it never asked for stories
+        #expect(!snapshot.hasNoResults)                                         // it never asked for stories
         #expect(texts(RenderTree.build(definition, size: .medium, scope: snapshot.scope).root) == ["1"])
     }
 

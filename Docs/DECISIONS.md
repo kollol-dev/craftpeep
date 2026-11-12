@@ -77,7 +77,7 @@ ADR-001 to ADR-011 were **Accepted** by the owner on 10 November 2026. ADR-012 o
 3. **Defer markets** until a source for UK shares and index levels is found, and go to the widget platform (M6) next.
 4. **Accept a paid plan** as the requirement for UK data. Conflicts with "useful without a subscription" for that part of the app.
 
-Recommendation: option 2. It delivers most of the value for the seven named companies at no cost, is honest about what it shows, and leaves the provider protocol ready for a UK source.
+**Decided by the owner on 12 November 2026: option 3, defer markets.** No market data code is written until a source for UK shares and index levels is found. The widget platform (M6) goes next. The earlier recommendation, kept for the record, was option 2. It delivers most of the value for the seven named companies at no cost, is honest about what it shows, and leaves the provider protocol ready for a UK source.
 
 ## ADR-011 Not building: Reddit API ingestion, system-data widgets, notch and lock-screen surfaces, full-article scraping
 

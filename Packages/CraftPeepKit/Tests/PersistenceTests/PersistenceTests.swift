@@ -204,3 +204,36 @@ private struct Store {
         #expect(try await store.articles.latestStories(limit: 10, matching: "orphan").isEmpty)
     }
 }
+
+@Suite struct WidgetInstanceRepositoryTests {
+    @Test func instancesRoundTripUpdateAndDelete() async throws {
+        let repository = GRDBWidgetInstanceRepository(database: try AppDatabase())
+        #expect(try await repository.allInstances().isEmpty)
+
+        var first = WidgetInstance(id: "a", widgetID: "com.craftpeep.news-list", settings: ["subject": .string("ai"), "showSources": .bool(false), "n": .number(3)], size: "large", createdAt: now)
+        let second = WidgetInstance(id: "b", widgetID: "com.craftpeep.repository-list", createdAt: now.addingTimeInterval(60))
+        try await repository.save(second)
+        try await repository.save(first)
+        #expect(try await repository.allInstances() == [first, second])       // oldest first
+
+        first.x = 120
+        first.y = 340.5
+        first.size = "small"
+        first.settings["subject"] = .string("all")
+        try await repository.save(first)
+        #expect(try await repository.allInstances().first == first)
+
+        try await repository.delete(instanceID: "a")
+        #expect(try await repository.allInstances().map(\.id) == ["b"])
+    }
+
+    @Test func unreadableSettingsFallBackToDefaultsInsteadOfFailing() async throws {
+        let database = try AppDatabase()
+        try await database.writer.write { db in
+            try db.execute(sql: "INSERT INTO widget_instance (id, widget_id, settings, size, created_at) VALUES ('x', 'w', 'not json', 'medium', 1)")
+        }
+        let instance = try #require(try await GRDBWidgetInstanceRepository(database: database).allInstances().first)
+        #expect(instance.settings.isEmpty)
+        #expect(instance.x == nil)
+    }
+}

@@ -1,0 +1,68 @@
+{
+  "spec": "0.2",
+  "id": "com.craftpeep.repository-list",
+  "name": "Rising Repositories",
+  "description": "The fastest-growing repositories on GitHub that CraftPeep has seen.",
+  "version": "1.0.0",
+  "sizes": ["small", "medium", "large"],
+  "settings": [
+    { "key": "language", "type": "string", "label": "Language", "default": "", "help": "For example Swift or Rust. Leave empty for any language." }
+  ],
+  "data": {
+    "repos": {
+      "type": "query",
+      "from": "repositories",
+      "where": { "language": "{{ settings.language }}" },
+      "sort": "rank",
+      "limit": 10
+    }
+  },
+  "view": {
+    "small": {
+      "type": "vstack", "padding": 12, "spacing": 8, "align": "leading",
+      "children": [
+        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 3, "spacing": 6,
+          "item": {
+            "type": "text", "text": "{{ r.fullName }}", "lines": 1, "weight": "medium",
+            "action": { "type": "openURL", "value": "{{ r.url }}" }
+          }
+        }
+      ]
+    },
+    "default": {
+      "type": "vstack", "padding": 14, "spacing": 10, "align": "leading",
+      "children": [
+        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 6, "spacing": 9,
+          "item": {
+            "type": "vstack", "spacing": 2, "align": "leading",
+            "children": [
+              { "type": "text", "text": "{{ r.fullName }}", "lines": 1, "weight": "medium", "action": { "type": "openURL", "value": "{{ r.url }}" } },
+              { "type": "text", "text": "{{ r.language ? r.language + ' · ' : '' }}{{ r.growth }}", "size": "caption", "color": "secondary", "lines": 1 }
+            ]
+          }
+        }
+      ]
+    },
+    "large": {
+      "type": "vstack", "padding": 16, "spacing": 10, "align": "leading",
+      "children": [
+        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 8, "spacing": 9,
+          "item": {
+            "type": "vstack", "spacing": 2, "align": "leading",
+            "children": [
+              { "type": "text", "text": "{{ r.fullName }}", "lines": 1, "weight": "medium", "action": { "type": "openURL", "value": "{{ r.url }}" } },
+              { "type": "text", "when": "{{ r.description }}", "text": "{{ r.description }}", "size": "caption", "lines": 2 },
+              { "type": "text", "text": "{{ r.language ? r.language + ' · ' : '' }}{{ r.growth }}", "size": "caption", "color": "secondary", "lines": 1 }
+            ]
+          }
+        }
+      ]
+    }
+  }
+}

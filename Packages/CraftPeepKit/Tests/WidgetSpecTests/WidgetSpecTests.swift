@@ -239,6 +239,8 @@ final class WidgetSpecTests: XCTestCase {
     func testQuerySourceRulesAreEnforced() {
         func problems(_ source: String) -> String { issues(querySpec(source: source)).joined(separator: "\n") }
         XCTAssertTrue(problems(#"{"type":"query","from":"articles"}"#).contains("'from' must be"))
+        XCTAssertEqual(problems(#"{"type":"query","from":"repositories","where":{"language":"Swift"},"limit":8}"#), "")
+        XCTAssertTrue(problems(#"{"type":"query","from":"repositories","sort":"latest"}"#).contains("only be sorted by rank"))
         XCTAssertTrue(problems(#"{"type":"query"}"#).contains("'from' must be"))
         XCTAssertTrue(problems(#"{"type":"query","from":"stories","sort":"random"}"#).contains("sort must be"))
         XCTAssertTrue(problems(#"{"type":"query","from":"stories","limit":500}"#).contains("limit must be"))

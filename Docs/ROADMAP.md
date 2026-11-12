@@ -177,7 +177,9 @@ Known limits:
 - **No GitHub token support.** Not needed at this request rate; it would raise the limits if more searches are added.
 - **Security advisories are not included.**
 
-#### M5b Markets — not started; needs an owner decision
+#### M5b Markets — deferred by the owner on 12 November 2026
+
+No market code will be written until a source for UK shares and index levels is found. The findings below stand.
 
 Research on 12 November 2026, from the providers' own pages (details in DATA_SOURCES.md):
 
@@ -187,16 +189,39 @@ Research on 12 November 2026, from the providers' own pages (details in DATA_SOU
 
 So a free key can cover the seven US watchlist companies and GBP/USD and EUR/GBP, with quotes and daily history. It cannot cover FTSE 100 constituents or, as far as the pages show, index levels. Options are in DECISIONS.md under ADR-010.
 
-- [ ] Provider decision
+- [x] Decision: deferred
 - [ ] `MarketDataProvider`, quotes, daily bars, watchlist, Markets view
 - [ ] Templates: Stock Watchlist, Single Metric, Sparkline, Repository List
 
-### M6 Widget platform (v0.2, part 2)
+### M6 Widget platform (v0.2, part 2) — split in two
 
-- [ ] Template catalogue and params schemas; Widget Gallery; My Widgets
-- [ ] AI builder: generate, validate, retry, preview, install, conversational edits
-- [ ] Multiple widgets, drag, resize between declared sizes, remove
-- [ ] Optional AI classification refinement
+#### M6a Several widgets, a gallery, generated settings — complete
+
+- [x] `query` sources can read repositories as well as stories
+- [x] A second bundled widget, Rising Repositories, defined entirely as a widget file
+- [x] Any number of widgets on the desktop, each with its own size, settings and remembered position (schema v7)
+- [x] Widgets tab in Settings: what is on the desktop, and a gallery with a live preview and Add to Desktop
+- [x] Each widget's settings controls are generated from the settings its file declares; a new widget needs no settings code
+- [x] Right-click a desktop widget for its size, Settings, and Remove
+
+Checked on 12 November 2026: 225 package tests pass. From the app's own screenshots, both widgets drew real data from their JSON definitions, and the Widgets tab listed two test widgets with controls generated from their declared settings. With those two widgets stored, the system window list showed two windows at desktop level with the right sizes, one at its saved position and one at the default. The test widgets were then removed.
+
+Not checked by a person: dragging, right-click menus on the desktop, the generated controls being operated, and how several widgets behave across Spaces and displays.
+
+Not built, from the original M6 list:
+
+- **Resizing by dragging.** Size is a three-way choice, which is what the spec's per-size views support.
+- **A separate My Widgets screen.** The Widgets tab in Settings does that job.
+- **Importing a widget file from disk.** The loader and validator exist; there is no file picker yet. Worth adding with the builder, since both need an install-and-review step.
+
+#### M6b AI widget builder — next
+
+- [ ] Describe a widget in words; the model chooses a bundled widget and its settings, or says nothing fits
+- [ ] Validate against the chosen widget's declared settings; preview; install on approval
+- [ ] Conversational changes that edit settings
+- [ ] Optional AI classification refinement for unlabelled top stories
+
+This depends on the AI layer, which has still not been run against a real model.
 
 ### M7 Desktop experience
 

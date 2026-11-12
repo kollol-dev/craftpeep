@@ -106,7 +106,7 @@
         "prompt": { "type": "string", "description": "ai: instruction for the model." },
         "cache": { "type": "string", "description": "ai: minimum time between model calls, e.g. '1h'." },
         "maxTokens": { "type": "integer", "maximum": 1000 },
-        "from": { "enum": ["stories"], "description": "query (spec 0.2): the collection to read from the local store." },
+        "from": { "enum": ["stories", "repositories"], "description": "query (spec 0.2): the collection to read from the local store." },
         "sort": { "enum": ["rank", "latest"], "description": "query: most important first, or newest first. Defaults to rank." },
         "where": {
           "type": "object",
@@ -120,7 +120,8 @@
               "items": { "enum": ["shipping", "announcement", "research", "benchmark", "funding", "partnership", "speculation", "unverified_claim"] }
             },
             "sinceHours": { "type": "number", "minimum": 1, "maximum": 2160 },
-            "saved": { "type": "boolean" }
+            "saved": { "type": "boolean" },
+            "language": { "type": "string", "description": "repositories: main language, or an expression giving one. Empty means any." }
           }
         }
       }

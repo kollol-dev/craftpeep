@@ -1,6 +1,6 @@
 # CraftPeep Widget Spec v0.2 (draft)
 
-> **What runs today.** The app loads spec 0.1 and 0.2 files. It resolves `static`, `time` and `query` sources; `http`, `rss`, `system` and `ai` sources are declared here but deliberately not run. It draws `vstack`, `hstack`, `zstack`, `spacer`, `divider`, `text`, `number`, `icon`, `badge`, `button` and `list`; `image`, `progress` and `chart` are not drawn yet. The `commands` and `files` permissions from the first draft are refused. One widget ships: News List.
+> **What runs today.** The app loads spec 0.1 and 0.2 files. It resolves `static`, `time` and `query` sources; `http`, `rss`, `system` and `ai` sources are declared here but deliberately not run. It draws `vstack`, `hstack`, `zstack`, `spacer`, `divider`, `text`, `number`, `icon`, `badge`, `button` and `list`; `image`, `progress` and `chart` are not drawn yet. The `commands` and `files` permissions from the first draft are refused. Two widgets ship: News List and Rising Repositories.
 
 A widget is **one JSON file**. Every authoring method (AI builder, visual builder, spec editor, hand-written files) produces and edits this same format. The Mac app renders it with SwiftUI; the iPhone app can later render the same file through WidgetKit.
 
@@ -34,7 +34,7 @@ Files in this folder:
 
 | Type | What it does | Notes |
 |---|---|---|
-| `query` | Read stories from CraftPeep's local store | Spec 0.2. `from: "stories"`, optional `where` (`subject`, `entities`, `kinds`, `sinceHours`, `saved`), `sort` (`rank` or `latest`), `limit` up to 50. Needs no permission and makes no network request. Each story exposes `headline`, `excerpt`, `url`, `discussionURL`, `source`, `sources`, `sourceCount`, `kind`, `support`, `publishedAt`, `points`, `comments`, `isRead`, `isSaved`. |
+| `query` | Read from CraftPeep's local store | Spec 0.2. `from: "repositories"` takes `where.language` and exposes `fullName`, `owner`, `name`, `description`, `url`, `language`, `stars`, `starsPerDay`, `growth`, `isMeasured`. `from: "stories"`, optional `where` (`subject`, `entities`, `kinds`, `sinceHours`, `saved`), `sort` (`rank` or `latest`), `limit` up to 50. Needs no permission and makes no network request. Each story exposes `headline`, `excerpt`, `url`, `discussionURL`, `source`, `sources`, `sourceCount`, `kind`, `support`, `publishedAt`, `points`, `comments`, `isRead`, `isSaved`. |
 | `static` | Literal value | For lookup tables and constants. |
 | `time` | Current date and time | Exposes `.date`. |
 | `http` | GET a JSON endpoint | Host must be in `permissions.network`. `path` picks a sub-object, `map` reshapes, `each` fans out one request per array element. |

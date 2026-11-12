@@ -95,6 +95,7 @@ public enum WidgetSpecLoader {
 /// The closed sets a `query` source may use. Kept as strings so this module depends on nothing;
 /// a test in the runtime checks they match the app's own types.
 public enum WidgetQueryVocabulary {
+    public static let collections: Set<String> = ["stories", "repositories"]
     public static let sorts: Set<String> = ["rank", "latest"]
     public static let subjects: Set<String> = ["all", "ai"]
     public static let kinds: Set<String> = [
@@ -194,8 +195,11 @@ extension WidgetDefinition {
                 if spec == "0.1" {
                     issues.append("\(label): query sources need spec 0.2")
                 }
-                if source.from != "stories" {
-                    issues.append("\(label): query 'from' must be \"stories\"")
+                if !WidgetQueryVocabulary.collections.contains(source.from ?? "") {
+                    issues.append("\(label): query 'from' must be one of \(WidgetQueryVocabulary.collections.sorted().joined(separator: ", "))")
+                }
+                if source.from == "repositories", source.sort == "latest" {
+                    issues.append("\(label): repositories can only be sorted by rank")
                 }
                 if let sort = source.sort, !WidgetQueryVocabulary.sorts.contains(sort) {
                     issues.append("\(label): sort must be one of \(WidgetQueryVocabulary.sorts.sorted().joined(separator: ", "))")

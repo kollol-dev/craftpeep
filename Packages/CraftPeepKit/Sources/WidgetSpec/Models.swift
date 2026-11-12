@@ -161,8 +161,11 @@ public struct WidgetQueryFilter: Codable, Sendable, Equatable {
     public let sinceHours: Double?
     /// Only stories the user saved or marked as favourite.
     public let saved: Bool?
+    /// repositories: only those written mainly in this language. Empty means any.
+    public let language: String?
 
-    public init(subject: String? = nil, entities: [String]? = nil, kinds: [String]? = nil, sinceHours: Double? = nil, saved: Bool? = nil) {
+    public init(subject: String? = nil, entities: [String]? = nil, kinds: [String]? = nil, sinceHours: Double? = nil, saved: Bool? = nil, language: String? = nil) {
+        self.language = language
         self.subject = subject
         self.entities = entities
         self.kinds = kinds
@@ -189,7 +192,7 @@ public struct WidgetDataSource: Codable, Sendable, Equatable {
     public let prompt: String?
     public let cache: String?
     public let maxTokens: Int?
-    /// query: which collection to read. Only "stories" exists.
+    /// query: which collection to read: "stories" or "repositories".
     public let from: String?
     /// query: conditions (JSON key: "where").
     public let filter: WidgetQueryFilter?
