@@ -6,7 +6,7 @@ CraftPeep is a native macOS app that collects technology and AI news from offici
 same story, shows where each one came from and how fresh it is, and ranks them with the reasons visible. Later
 milestones add briefings and desktop widgets. Local-first, no account, sandboxed. Free and open source. Mac first, iPhone later.
 
-**Status:** early development. The app fetches 33 feeds and the Hacker News front page, groups reports of the
+**Status:** early development. The app fetches 33 feeds, the Hacker News front page and GitHub's search API, groups reports of the
 same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
 Optional AI summaries and a daily briefing are built but have not yet been run against a real model. One desktop widget, a News List, is included and off by default.
 See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
@@ -19,6 +19,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Top view ranked by source authority, independent coverage, community interest and recency, with the reasons shown. Latest view is newest first.
 - Overview, AI Intelligence, Technology News and Saved views; a detail pane listing every source for a story.
 - Read state, Read Later and Favourite. Filter by kind. Follow or mute companies, technologies and words.
+- Developer Radar: fast-growing GitHub repositories, with each growth figure marked as measured or estimated; follow a project's releases in one click.
 - Add your own RSS or Atom feeds; switch any source off.
 - A menu bar item showing how many top stories are unread.
 - Stories older than 90 days are dropped unless you saved them.

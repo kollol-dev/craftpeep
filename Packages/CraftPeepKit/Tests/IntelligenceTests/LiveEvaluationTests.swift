@@ -58,3 +58,21 @@ struct LiveEvaluationTests {
         #expect(report.clustersCreated > 0)
     }
 }
+
+/// Fetches GitHub's search API for real and prints the ranked result.
+///   CRAFTPEEP_LIVE=1 swift test --filter LiveGitHubTests
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["CRAFTPEEP_LIVE"] == "1"))
+struct LiveGitHubTests {
+    @Test func fetchesAndRanksRepositories() async throws {
+        let store = GRDBRepositoryStore(database: try AppDatabase())
+        let service = GitHubService(http: URLSessionHTTPClient(), store: store)
+        let report = try await service.refreshIfDue()
+        print("GITHUB seen=\(report.repositoriesSeen) failedQueries=\(report.failedQueries) error=\(await service.lastError() ?? "none")")
+
+        let histories = try await store.histories(seenSince: .distantPast, baselineSince: Date().addingTimeInterval(-7 * 86_400))
+        for repository in RepositoryRanker.rank(histories, now: Date()).prefix(10) {
+            print("GITHUB \(Int(repository.starsPerDay))/day \(repository.repository.fullName) [\(repository.repository.language ?? "-")] \(repository.repository.stars) stars; \(repository.basis)")
+        }
+        #expect(report.repositoriesSeen > 20)
+    }
+}

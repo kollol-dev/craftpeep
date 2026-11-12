@@ -20,7 +20,7 @@ struct StoryItem: Identifiable, Equatable {
 }
 
 enum SidebarSection: String, CaseIterable, Identifiable {
-    case overview, ai, news, saved
+    case overview, ai, news, radar, saved
 
     var id: String { rawValue }
 
@@ -29,6 +29,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .overview: "Overview"
         case .ai: "AI Intelligence"
         case .news: "Technology News"
+        case .radar: "Developer Radar"
         case .saved: "Saved"
         }
     }
@@ -38,6 +39,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .overview: "sparkles.rectangle.stack"
         case .ai: "brain"
         case .news: "newspaper"
+        case .radar: "chevron.left.forwardslash.chevron.right"
         case .saved: "bookmark"
         }
     }
@@ -86,12 +88,32 @@ final class AppModel {
     /// True while the detail pane shows the briefing instead of a story.
     var showingBriefing = false
 
+    // Developer Radar
+    private(set) var repositories: [RisingRepository] = []
+    private(set) var repositoryLanguages: [String] = []
+    private(set) var radarUpdated: Date?
+    private(set) var radarError: String?
+    /// Nil means every language.
+    var repositoryLanguage: String? { didSet { if repositoryLanguage != oldValue { scheduleReload() } } }
+    var selectedRepositoryID: Int64?
+
+    var selectedRepository: RisingRepository? {
+        repositories.first { $0.id == selectedRepositoryID }
+    }
+
     // Desktop widget
     private(set) var widget = DesktopWidgetState.loading
     private var widgetStoryIDs: [String: Int64] = [:]
     private let widgetController = DesktopWidgetController()
 
-    var section = SidebarSection.overview { didSet { if section != oldValue { selection = nil; scheduleReload() } } }
+    var section = SidebarSection.overview {
+        didSet {
+            guard section != oldValue else { return }
+            selection = nil
+            showingBriefing = false
+            scheduleReload()
+        }
+    }
     var order = StoryOrder.top { didSet { if order != oldValue { scheduleReload() } } }
     /// Empty means every kind, including unclassified.
     var kindFilter: Set<StoryKind> = [] { didSet { if kindFilter != oldValue { scheduleReload() } } }
@@ -113,6 +135,8 @@ final class AppModel {
         let secrets: any SecretStore
         let gateway: AIGateway
         let usage: any AIUsageRepository
+        let repositories: any RepositoryStore
+        let github: GitHubService
         let summaries: SummaryService
         let briefings: BriefingService
     }
@@ -137,6 +161,7 @@ final class AppModel {
             let secrets = KeychainSecretStore()
             let usage = GRDBAIUsageRepository(database: database)
             let gateway = AIGateway(settings: { AIPreferences.current() }, secrets: secrets, usage: usage)
+            let repositories = GRDBRepositoryStore(database: database)
             services = Services(
                 sources: sources,
                 clusters: clusters,
@@ -150,6 +175,8 @@ final class AppModel {
                 secrets: secrets,
                 gateway: gateway,
                 usage: usage,
+                repositories: repositories,
+                github: GitHubService(http: URLSessionHTTPClient(), store: repositories),
                 summaries: SummaryService(gateway: gateway, clusters: clusters, summaries: GRDBSummaryRepository(database: database)),
                 briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database))
             )
@@ -193,6 +220,7 @@ final class AppModel {
 
         while !Task.isCancelled {
             await refresh(onlyDue: true)
+            await refreshRadar()
             await writeBriefingIfDue()
             try? await Task.sleep(for: Self.schedulerTick, tolerance: .seconds(60))
         }
@@ -256,6 +284,9 @@ final class AppModel {
             filter.keptOnly = true
             ranked = false
             limit = 1000
+        case .radar:
+            await reloadRadar()
+            return
         }
         if !request.query.isEmpty {
             // Search covers everything stored for the section, newest first.
@@ -412,6 +443,69 @@ final class AppModel {
         guard let url = URL(string: string), let scheme = url.scheme?.lowercased(),
               scheme == "https" || scheme == "http" else { return }
         NSWorkspace.shared.open(url)
+    }
+
+    // MARK: - Developer Radar
+
+    /// Asks GitHub for candidates if enough time has passed since the last request. A handful of
+    /// requests a few times a day; nothing is sent for stories or AI here.
+    func refreshRadar() async {
+        guard let services else { return }
+        if let report = try? await services.github.refreshIfDue(), report.ran, section == .radar {
+            await reloadRadar()
+        }
+    }
+
+    private func reloadRadar() async {
+        guard let services else { return }
+        let now = Date()
+        let histories = (try? await services.repositories.histories(
+            seenSince: now.addingTimeInterval(-3 * 86_400), baselineSince: now.addingTimeInterval(-7 * 86_400)
+        )) ?? []
+        let ranked = RepositoryRanker.rank(histories, now: now)
+        repositoryLanguages = Array(Set(ranked.compactMap(\.repository.language))).sorted()
+        if let language = repositoryLanguage, !repositoryLanguages.contains(language) { repositoryLanguage = nil }
+
+        let query = searchText.trimmingCharacters(in: .whitespaces).lowercased()
+        repositories = ranked.filter { item in
+            (repositoryLanguage == nil || item.repository.language == repositoryLanguage)
+                && (query.isEmpty
+                    || item.repository.fullName.lowercased().contains(query)
+                    || item.repository.description?.lowercased().contains(query) == true
+                    || item.repository.topics.contains { $0.lowercased().contains(query) })
+        }
+        radarUpdated = await services.github.lastSuccess()
+        radarError = await services.github.lastError()
+        if let selectedRepositoryID, !repositories.contains(where: { $0.id == selectedRepositoryID }) { self.selectedRepositoryID = nil }
+        sources = (try? await services.sources.allSources()) ?? sources
+    }
+
+    func releaseFeedURL(for repository: Repository) -> String {
+        "https://github.com/\(repository.fullName)/releases.atom"
+    }
+
+    func isFollowingReleases(of repository: Repository) -> Bool {
+        let url = releaseFeedURL(for: repository)
+        return sources.contains { $0.url == url }
+    }
+
+    /// Adds the repository's own release feed as a source, so new versions arrive as stories.
+    func followReleases(of repository: Repository) async -> String? {
+        guard let services else { return "CraftPeep is not running." }
+        let definition = SourceDefinition(
+            kind: .rss, name: "\(repository.fullName) releases", url: releaseFeedURL(for: repository),
+            siteURL: repository.url,
+            // A project's release feed on github.com is published by the project itself.
+            tier: .official, topics: ["dev"], refreshSeconds: 3600
+        )
+        do {
+            guard try await services.sources.addUserSource(definition) else { return "You already follow these releases." }
+        } catch {
+            return "Could not follow the releases."
+        }
+        await refresh(onlyDue: true)
+        sources = (try? await services.sources.allSources()) ?? sources
+        return nil
     }
 
     // MARK: - Desktop widget

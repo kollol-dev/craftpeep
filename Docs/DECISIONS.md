@@ -70,7 +70,14 @@ ADR-001 to ADR-011 were **Accepted** by the owner on 10 November 2026. ADR-012 o
 
 **Decision.** `MarketDataProvider` protocol; no bundled key; provider chosen after a spike. Unofficial endpoints are not used.
 
-**Open.** Provider choice; treatment of index values.
+**Open, with findings from 12 November 2026** (see DATA_SOURCES.md): a free Twelve Data key covers US shares and forex in real time but not London-listed shares, and index values are not documented on any plan. Choices for the owner:
+
+1. **US watchlist and FX only, on Twelve Data's free plan.** Works today at no cost. No FTSE 100, no index levels; the Markets view would say so plainly.
+2. **The same, plus US index proxies:** show SPY, QQQ and DIA, labelled as tracking funds, never as the index. Still nothing for the UK.
+3. **Defer markets** until a source for UK shares and index levels is found, and go to the widget platform (M6) next.
+4. **Accept a paid plan** as the requirement for UK data. Conflicts with "useful without a subscription" for that part of the app.
+
+Recommendation: option 2. It delivers most of the value for the seven named companies at no cost, is honest about what it shows, and leaves the provider protocol ready for a UK source.
 
 ## ADR-011 Not building: Reddit API ingestion, system-data widgets, notch and lock-screen surfaces, full-article scraping
 

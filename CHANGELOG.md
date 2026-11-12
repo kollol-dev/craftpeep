@@ -6,6 +6,12 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Developer Radar (M5a).
+  - Fast-growing GitHub repositories from the official search API, with no token needed.
+  - Star growth measured from CraftPeep's own daily readings; estimates are labelled as estimates.
+  - Follow Releases adds a project's release feed, so new versions appear as stories.
+  - Schema v6: repositories, star snapshots, key-value settings for the engine.
+
 - First desktop widget (M4c), off by default.
   - Widget spec 0.2 with a `query` source that reads stories from the local store and needs no permissions.
   - `WidgetRuntime` and `WidgetRender`: declarative widget files drawn with native SwiftUI; nothing is executed.

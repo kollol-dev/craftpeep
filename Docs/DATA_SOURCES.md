@@ -46,6 +46,7 @@ Rule for every adapter: its pull request includes a link to the provider's curre
 
 ## GitHub (v0.2)
 
+- **Implemented (12 November 2026).** Confirmed live: the search endpoint answers without a token; response headers report a limit of 10 search requests per minute unauthenticated; items carry `id`, `full_name`, `html_url`, `description`, `language`, `topics`, `stargazers_count`, `forks_count`, `created_at`, `pushed_at`, `fork`, `archived`. CraftPeep sends three searches at most every six hours with a generic User-Agent.
 - **Trending:** Recalled: there is no official trending API; the trending page is HTML only. Scraping it is fragile and against the "prefer official APIs" rule. Search during this research found nothing contradicting that, but it did not positively confirm it.
 - **Substitute, using the official search API:** repositories created in the last N days sorted by stars, and repositories pushed recently above a star threshold, filtered by language or topic. Store star counts on each fetch so CraftPeep computes its own star velocity over time. This is a better signal than the trending page once a week of history exists, and it is honest to label it "rising" rather than "trending".
 - **Limits:** Confirmed from GitHub docs: search is limited to 30 requests per minute when authenticated; unauthenticated core REST is 60 requests per hour. Reported: unauthenticated search is 10 per minute. A fine-grained personal token with no scopes raises the limits and is optional.
@@ -53,6 +54,24 @@ Rule for every adapter: its pull request includes a link to the provider's curre
 - **Security advisories:** Recalled: the global advisories endpoint is public. Verify.
 
 ## Market prices (v0.2) — decision required
+
+### Update, 12 November 2026: read from the providers' own pages
+
+**Twelve Data** (pricing, docs and terms pages, terms dated 1 January 2026) — Confirmed:
+
+- Free "Basic" plan: 8 requests per minute, 800 per day. `/quote` and `/time_series` cost one credit per symbol.
+- Basic lists real-time US equities and ETFs, real-time forex and real-time crypto.
+- London and other non-US exchanges are not listed for Basic. The $79 "Grow" plan lists end-of-day global equities; the $229 "Pro" plan lists real-time EU data.
+- Index values: not stated on any page read.
+- `/time_series` accepts a daily interval with no plan restriction stated; history depth on Basic is not stated.
+- Terms: access is for "Internal Use"; using free-tier data for commercial purposes is prohibited; display to third parties or redistribution needs an add-on or written agreement.
+- Auth: `apikey` query parameter or an `Authorization: apikey …` header. Base URL `https://api.twelvedata.com`. Quote fields include `close`, `previous_close`, `change`, `percent_change`, `timestamp`, `is_market_open`, `currency`, `exchange`.
+
+**Finnhub** — the pricing and API documentation pages returned no readable content. From its terms page, Confirmed: every listed plan is "strictly for personal use"; no sharing of data or derived results with third parties without written approval; data must be deleted when a subscription ends.
+
+**Neither provider's terms say how they treat an open-source app that ships no key and has each user supply their own.** That model keeps each user inside their own personal, non-commercial agreement, which is the most defensible reading, but it is a reading, not something either provider has stated.
+
+The older notes below are from third-party comparisons and are kept for context.
 
 No provider was verified against its own terms in this research; the table is from third-party comparisons and needs checking.
 

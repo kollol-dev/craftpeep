@@ -15,10 +15,22 @@ struct MainView: View {
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 260)
         } content: {
-            StoryListView(model: model)
-                .navigationSplitViewColumnWidth(min: 360, ideal: 460)
+            Group {
+                if model.section == .radar {
+                    RadarListView(model: model)
+                } else {
+                    StoryListView(model: model)
+                }
+            }
+            .navigationSplitViewColumnWidth(min: 360, ideal: 460)
         } detail: {
-            if model.showingBriefing, let briefing = model.briefing {
+            if model.section == .radar {
+                if let repository = model.selectedRepository {
+                    RepositoryDetailView(item: repository, model: model)
+                } else {
+                    ContentUnavailableView("No repository selected", systemImage: "chevron.left.forwardslash.chevron.right", description: Text("Choose a repository to see how fast it is growing and follow its releases."))
+                }
+            } else if model.showingBriefing, let briefing = model.briefing {
                 BriefingView(briefing: briefing, model: model)
             } else if let item = model.selectedItem {
                 StoryDetailView(item: item, model: model)

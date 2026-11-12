@@ -1,5 +1,6 @@
 #if DEBUG
 import AppKit
+import Domain
 import SwiftUI
 
 /// Development aid: lets a build photograph its own windows so the UI can be checked without
@@ -7,7 +8,7 @@ import SwiftUI
 ///
 ///   open --env CRAFTPEEP_SNAPSHOT=overview,select CraftPeep.app
 ///
-/// Options: a section name (overview, ai, news, saved), `select` to select the first story,
+/// Options: a section name (overview, ai, news, radar, saved), `select` to select the first story,
 /// `panels` to also show Settings and the menu bar panel in plain windows so they can be captured.
 /// PNGs are written to the app's Application Support/CraftPeep/snapshots.
 /// Translucent chrome (sidebar, toolbar buttons) comes out blank; that is a limit of the capture.
@@ -23,7 +24,10 @@ enum DebugSnapshot {
                 model.section = section
             }
             try? await Task.sleep(for: .seconds(1))
-            if options.contains("select") { model.selection = model.stories.first?.id }
+            if options.contains("select") {
+                model.selection = model.stories.first?.id
+                model.selectedRepositoryID = model.repositories.first?.id
+            }
             if options.contains("panels") {
                 await model.refreshWidget()
                 show(DesktopWidgetView(model: model), title: "Widget", size: WidgetPreferences.current().contentSize)

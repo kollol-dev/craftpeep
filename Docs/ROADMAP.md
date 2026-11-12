@@ -157,11 +157,39 @@ Decisions that differ from WIDGET_SYSTEM.md as first written:
 - [ ] Accessibility pass with VoiceOver; performance budgets measured
 - [ ] Two weeks of daily use; changes from that fortnight take priority over M5
 
-### M5 Extended data (v0.2, part 1)
+### M5 Extended data (v0.2, part 1) — GitHub done; markets waiting on a decision
 
-- [ ] Market data spike and provider decision; `MarketDataProvider`, quotes, bars, watchlist, Markets view
-- [ ] GitHub adapter: rising repositories from search, star snapshots, release feeds; Developer Radar view
-- [ ] Templates: Stock Watchlist, Single Metric, Metric Grid, Sparkline, Repository List
+#### M5a Developer Radar — complete
+
+- [x] GitHub adapter on the official repository search API, without a token: three searches per refresh, at most every six hours, one hour after a failure
+- [x] Star snapshots, one per repository per day; growth measured between CraftPeep's own readings
+- [x] Ranking by stars per day, stating for each repository whether the figure is measured or an estimate from age
+- [x] Developer Radar view: language filter, search, detail pane, open on GitHub
+- [x] Follow Releases: adds a repository's own release feed as a source, so new versions arrive as stories labelled Shipping
+- [x] Schema v6: repositories, snapshots, a small key-value table
+
+Checked on 12 November 2026: 218 package tests pass. A live run fetched 131 repositories with no failed queries. GitHub's response headers confirmed the unauthenticated search limit of ten requests a minute.
+
+Known limits:
+
+- **Every figure is an estimate until the second day.** With one reading there is nothing to measure against, so the list shows "stars since creation" and says so. Older repositories only appear once two readings exist.
+- **Candidates are limited to what three searches return** (new repositories, and active ones tagged `llm` or `ai-agents`). A fast-growing older project outside those tags will not be seen. Widening this is a matter of adding searches.
+- **No GitHub token support.** Not needed at this request rate; it would raise the limits if more searches are added.
+- **Security advisories are not included.**
+
+#### M5b Markets — not started; needs an owner decision
+
+Research on 12 November 2026, from the providers' own pages (details in DATA_SOURCES.md):
+
+- **Twelve Data, free plan:** 8 requests a minute, 800 a day; real-time US shares and ETFs and real-time forex. London-listed shares are not on the free plan (end-of-day global data starts at the $79 plan). Whether index values are available on any plan was not stated on the pages read. Free-plan data may not be used commercially.
+- **Finnhub:** pricing and API pages could not be read (JavaScript only). Its terms say every listed plan is for personal use only.
+- **Neither set of terms addresses an app that ships no key and has each user bring their own.**
+
+So a free key can cover the seven US watchlist companies and GBP/USD and EUR/GBP, with quotes and daily history. It cannot cover FTSE 100 constituents or, as far as the pages show, index levels. Options are in DECISIONS.md under ADR-010.
+
+- [ ] Provider decision
+- [ ] `MarketDataProvider`, quotes, daily bars, watchlist, Markets view
+- [ ] Templates: Stock Watchlist, Single Metric, Sparkline, Repository List
 
 ### M6 Widget platform (v0.2, part 2)
 

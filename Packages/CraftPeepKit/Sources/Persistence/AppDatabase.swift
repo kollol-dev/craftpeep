@@ -185,6 +185,39 @@ public final class AppDatabase: Sendable {
                 """)
         }
 
+        migrator.registerMigration("v6-repositories") { db in
+            try db.execute(sql: """
+                CREATE TABLE repository (
+                  id            INTEGER PRIMARY KEY,
+                  full_name     TEXT NOT NULL,
+                  description   TEXT,
+                  url           TEXT NOT NULL,
+                  language      TEXT,
+                  topics        TEXT NOT NULL DEFAULT '[]',
+                  stars         INTEGER NOT NULL,
+                  forks         INTEGER NOT NULL DEFAULT 0,
+                  created_at    INTEGER,
+                  pushed_at     INTEGER,
+                  first_seen_at INTEGER NOT NULL,
+                  last_seen_at  INTEGER NOT NULL
+                );
+
+                -- One row per repository per day: enough to measure change, small enough to keep.
+                CREATE TABLE repo_snapshot (
+                  repo_id INTEGER NOT NULL REFERENCES repository(id) ON DELETE CASCADE,
+                  day     INTEGER NOT NULL,
+                  at      INTEGER NOT NULL,
+                  stars   INTEGER NOT NULL,
+                  PRIMARY KEY (repo_id, day)
+                );
+
+                CREATE TABLE meta (
+                  key   TEXT PRIMARY KEY,
+                  value TEXT NOT NULL
+                );
+                """)
+        }
+
         return migrator
     }
 }
