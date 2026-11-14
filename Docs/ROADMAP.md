@@ -230,6 +230,21 @@ What the builder is, and is not: with two widgets and three settings between the
 
 Not built: optional AI classification refinement for unlabelled stories. It should wait until the AI layer has been seen working.
 
+#### M6c Widget appearance — complete (owner request, 14 November 2026)
+
+- [x] Five styles per widget, in the spirit of the system's own: Automatic (translucent, follows the Mac), Light, Dark, Clear, Tinted (filled with the widget's colour)
+- [x] Nine colours per widget, used for the header and, when tinted, the background
+- [x] Native-feeling chrome: the system widgets' large continuous corner, a hairline edge, and solid white text on tinted widgets where the system's translucent label colours wash out
+- [x] Both bundled widgets have a header with a symbol in the widget's colour
+- [x] Style and colour from the right-click menu on the desktop, or in Settings → Widgets with colour swatches and a live preview beside each widget
+- [x] Schema v8 (style and tint per widget). Widget files are unchanged: their "accent" colour now means the colour the user picked
+
+Checked on 14 November 2026: 236 package tests pass. From the app's own screenshots, all five styles drew the News List correctly, and two test widgets stored with the tinted and light styles appeared as real desktop windows in those styles. The test widgets were removed.
+
+Not checked: the Clear style over a real wallpaper (the screenshots have no wallpaper behind them, so Clear looks like Dark there); the colour swatches and menus being operated.
+
+Not built: free colour choice (nine fixed colours keep every combination legible), per-widget fonts, background images, and editing a widget's layout by hand. A layout editor would mean editing widget files directly, which is a much larger feature; say if you want it.
+
 ### M7 Desktop experience
 
 - [ ] Multi-display placement, saved layouts, always-on-top, stacks if still wanted

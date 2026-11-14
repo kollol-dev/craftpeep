@@ -639,6 +639,14 @@ final class AppModel {
         }
     }
 
+    func setWidgetAppearance(_ id: String, style: WidgetStyle? = nil, tint: WidgetTint? = nil) async {
+        // Appearance changes nothing about the data, so the store is updated without re-resolving.
+        await updateWidget(id, refresh: false) { instance in
+            if let style { instance.style = style.rawValue }
+            if let tint { instance.tint = tint.rawValue }
+        }
+    }
+
     func setWidgetSize(_ id: String, _ size: WidgetSize) async {
         await updateWidget(id) { $0.size = size.rawValue }
     }

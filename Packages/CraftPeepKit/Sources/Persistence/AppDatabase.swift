@@ -232,6 +232,13 @@ public final class AppDatabase: Sendable {
                 """)
         }
 
+        migrator.registerMigration("v8-widget-appearance") { db in
+            try db.execute(sql: """
+                ALTER TABLE widget_instance ADD COLUMN style TEXT NOT NULL DEFAULT 'automatic';
+                ALTER TABLE widget_instance ADD COLUMN tint TEXT NOT NULL DEFAULT 'blue';
+                """)
+        }
+
         return migrator
     }
 }

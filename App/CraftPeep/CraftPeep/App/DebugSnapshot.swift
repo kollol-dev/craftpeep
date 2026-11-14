@@ -36,7 +36,14 @@ enum DebugSnapshot {
                         title: "Widget \(definition.name)", size: WidgetSize.medium.contentSize
                     )
                 }
-                show(WidgetSettingsView(model: model), title: "Widget Settings", size: NSSize(width: 640, height: 560))
+                if let news = model.gallery.first, let state = model.galleryPreviews[news.id] {
+                    for style in WidgetStyle.allCases {
+                        let appearance = WidgetAppearance(style: style, tint: style == .tinted ? .orange : .purple)
+                        show(DesktopWidgetContent(state: state, name: news.name, appearance: appearance, perform: { _ in }),
+                             title: "Style \(style.label)", size: WidgetSize.small.contentSize)
+                    }
+                }
+                show(WidgetSettingsView(model: model), title: "Widget Settings", size: NSSize(width: 700, height: 620))
                 show(SettingsView(model: model), title: "Settings", size: NSSize(width: 640, height: 480))
                 show(PulseView(model: model), title: "Pulse", size: NSSize(width: 360, height: 420))
                 show(AISettingsView(model: model), title: "AI Settings", size: NSSize(width: 640, height: 640))

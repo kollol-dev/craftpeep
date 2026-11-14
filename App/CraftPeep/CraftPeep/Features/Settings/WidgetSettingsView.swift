@@ -155,6 +155,26 @@ private struct WidgetInstanceRow: View {
     var onChangeWithWords: (() -> Void)?
 
     var body: some View {
+        HStack(alignment: .top, spacing: 16) {
+            controls
+            preview
+        }
+        .padding(.vertical, 4)
+    }
+
+    /// The widget as it looks on the desktop now, at a smaller scale, so a change of style shows at once.
+    private var preview: some View {
+        let full = item.size.contentSize
+        let scale = 0.42
+        return DesktopWidgetContent(state: item.state, name: item.definition.name, appearance: item.appearance, perform: { _ in })
+            .frame(width: full.width, height: full.height)
+            .scaleEffect(scale, anchor: .topLeading)
+            .frame(width: full.width * scale, height: full.height * scale, alignment: .topLeading)
+            .allowsHitTesting(false)
+            .accessibilityLabel("Preview of \(item.definition.name) as it looks on the desktop")
+    }
+
+    private var controls: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text(item.definition.name)
@@ -171,17 +191,54 @@ private struct WidgetInstanceRow: View {
             )) {
                 ForEach(item.definition.sizes ?? [.small, .medium, .large], id: \.self) { Text($0.label).tag($0) }
             }
+            Picker("Appearance", selection: Binding(
+                get: { item.appearance.style },
+                set: { style in Task { await model.setWidgetAppearance(item.id, style: style) } }
+            )) {
+                ForEach(WidgetStyle.allCases) { Text($0.label).tag($0) }
+            }
+            LabeledContent("Colour") {
+                TintPicker(selection: item.appearance.tint) { tint in
+                    Task { await model.setWidgetAppearance(item.id, tint: tint) }
+                }
+            }
             ForEach(item.definition.settings ?? [], id: \.key) { setting in
                 SettingControl(setting: setting, value: value(for: setting)) { newValue in
                     Task { await model.setWidgetSetting(item.id, key: setting.key, value: newValue) }
                 }
             }
         }
-        .padding(.vertical, 4)
     }
 
     private func value(for setting: WidgetSetting) -> WidgetSettingValue? {
         item.instance.settings[setting.key] ?? setting.defaultValue.flatMap(WidgetSettingValue.init)
+    }
+}
+
+/// A row of colour swatches, like the accent colour choice in System Settings.
+private struct TintPicker: View {
+    let selection: WidgetTint
+    let onSelect: (WidgetTint) -> Void
+
+    var body: some View {
+        HStack(spacing: 6) {
+            ForEach(WidgetTint.allCases) { tint in
+                Button {
+                    onSelect(tint)
+                } label: {
+                    Circle()
+                        .fill(tint.color)
+                        .frame(width: 16, height: 16)
+                        .overlay(Circle().strokeBorder(.black.opacity(0.15)))
+                        .padding(2)
+                        .overlay(Circle().strokeBorder(Color.primary.opacity(selection == tint ? 0.8 : 0), lineWidth: 1.5))
+                }
+                .buttonStyle(.plain)
+                .help(tint.label)
+                .accessibilityLabel(tint.label)
+                .accessibilityAddTraits(selection == tint ? .isSelected : [])
+            }
+        }
     }
 }
 

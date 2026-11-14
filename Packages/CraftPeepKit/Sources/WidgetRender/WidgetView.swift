@@ -5,20 +5,24 @@ import WidgetSpec
 /// actions are handed to the host.
 public struct WidgetView: View {
     private let node: RenderNode
+    private let accent: Color
     private let onAction: (RenderAction) -> Void
 
-    public init(node: RenderNode, onAction: @escaping (RenderAction) -> Void) {
+    /// `accent` is what the "accent" colour token means for this widget.
+    public init(node: RenderNode, accent: Color = .accentColor, onAction: @escaping (RenderAction) -> Void) {
         self.node = node
+        self.accent = accent
         self.onAction = onAction
     }
 
     public var body: some View {
-        NodeView(node: node, onAction: onAction)
+        NodeView(node: node, accent: accent, onAction: onAction)
     }
 }
 
 private struct NodeView: View {
     let node: RenderNode
+    let accent: Color
     let onAction: (RenderAction) -> Void
 
     var body: some View {
@@ -29,7 +33,7 @@ private struct NodeView: View {
     private var styled: some View {
         let view = content
             .padding(CGFloat(node.padding ?? 0))
-            .background(node.background.map { AnyShapeStyle($0.color) } ?? AnyShapeStyle(.clear),
+            .background(node.background.map { $0.style(accent: accent) } ?? AnyShapeStyle(.clear),
                         in: RoundedRectangle(cornerRadius: CGFloat(node.radius ?? 0)))
         if let action = node.action, node.kind != .button {
             Button { onAction(action) } label: { view.contentShape(Rectangle()) }
@@ -56,14 +60,14 @@ private struct NodeView: View {
         case .text:
             Text(node.text ?? "")
                 .font(font)
-                .foregroundStyle(node.color?.color ?? Color.primary)
+                .foregroundStyle(node.color?.style(accent: accent) ?? AnyShapeStyle(.primary))
                 .lineLimit(node.lines)
                 .multilineTextAlignment(textAlignment)
                 .frame(maxWidth: .infinity, alignment: frameAlignment)
         case .icon:
             Image(systemName: node.symbol ?? "questionmark")
                 .font(font)
-                .foregroundStyle(node.color?.color ?? Color.secondary)
+                .foregroundStyle(node.color?.style(accent: accent) ?? AnyShapeStyle(.secondary))
                 .accessibilityHidden(true)
         case .badge:
             Text(node.text ?? "")
@@ -81,7 +85,7 @@ private struct NodeView: View {
     @ViewBuilder
     private var children: some View {
         ForEach(Array(node.children.enumerated()), id: \.offset) { _, child in
-            NodeView(node: child, onAction: onAction)
+            NodeView(node: child, accent: accent, onAction: onAction)
         }
     }
 
@@ -127,14 +131,16 @@ private struct NodeView: View {
 }
 
 extension RenderColor {
-    var color: Color {
+    /// Primary and secondary are hierarchical, so the host decides what they look like (white on a
+    /// tinted widget, for example) without the widget file knowing.
+    func style(accent: Color) -> AnyShapeStyle {
         switch self {
-        case .primary: .primary
-        case .secondary: .secondary
-        case .accent: .accentColor
-        case .positive: .green
-        case .negative: .red
-        case .rgb(let red, let green, let blue): Color(red: red, green: green, blue: blue)
+        case .primary: AnyShapeStyle(.primary)
+        case .secondary: AnyShapeStyle(.secondary)
+        case .accent: AnyShapeStyle(accent)
+        case .positive: AnyShapeStyle(Color.green)
+        case .negative: AnyShapeStyle(Color.red)
+        case .rgb(let red, let green, let blue): AnyShapeStyle(Color(red: red, green: green, blue: blue))
         }
     }
 }

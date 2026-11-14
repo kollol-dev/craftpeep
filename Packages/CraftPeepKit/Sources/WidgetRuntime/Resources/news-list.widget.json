@@ -25,7 +25,13 @@
     "small": {
       "type": "vstack", "padding": 12, "spacing": 8, "align": "leading",
       "children": [
-        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "newspaper.fill", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 3,
           "item": {
@@ -39,7 +45,13 @@
     "default": {
       "type": "vstack", "padding": 14, "spacing": 10, "align": "leading",
       "children": [
-        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "newspaper.fill", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 6,
           "item": {
@@ -63,7 +75,13 @@
     "large": {
       "type": "vstack", "padding": 16, "spacing": 10, "align": "leading",
       "children": [
-        { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "newspaper.fill", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "{{ settings.subject == 'ai' ? 'AI' : 'Top stories' }}", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.stories }}", "as": "s", "spacing": 9, "limit": 10,
           "item": {

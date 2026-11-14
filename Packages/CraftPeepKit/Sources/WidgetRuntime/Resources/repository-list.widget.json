@@ -21,7 +21,13 @@
     "small": {
       "type": "vstack", "padding": 12, "spacing": 8, "align": "leading",
       "children": [
-        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "chevron.left.forwardslash.chevron.right", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 3, "spacing": 6,
           "item": {
@@ -34,7 +40,13 @@
     "default": {
       "type": "vstack", "padding": 14, "spacing": 10, "align": "leading",
       "children": [
-        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "chevron.left.forwardslash.chevron.right", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 6, "spacing": 9,
           "item": {
@@ -50,7 +62,13 @@
     "large": {
       "type": "vstack", "padding": 16, "spacing": 10, "align": "leading",
       "children": [
-        { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "secondary" },
+        {
+          "type": "hstack", "spacing": 5,
+          "children": [
+            { "type": "icon", "symbol": "chevron.left.forwardslash.chevron.right", "size": "caption", "color": "accent" },
+            { "type": "text", "text": "Rising on GitHub", "size": "caption", "weight": "bold", "color": "accent" }
+          ]
+        },
         {
           "type": "list", "each": "{{ data.repos }}", "as": "r", "limit": 8, "spacing": 9,
           "item": {

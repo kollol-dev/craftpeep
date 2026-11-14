@@ -38,9 +38,18 @@ public struct WidgetInstance: Sendable, Equatable, Identifiable {
     /// Bottom-left corner in screen coordinates. Nil until the user has moved it.
     public var x: Double?
     public var y: Double?
+    /// How the widget is drawn: "automatic", "light", "dark", "clear" or "tinted".
+    public var style: String
+    /// The accent colour's name, used for the header and, in the tinted style, the whole background.
+    public var tint: String
     public var createdAt: Date
 
-    public init(id: String, widgetID: String, settings: [String: WidgetSettingValue] = [:], size: String = "medium", x: Double? = nil, y: Double? = nil, createdAt: Date) {
+    public init(
+        id: String, widgetID: String, settings: [String: WidgetSettingValue] = [:], size: String = "medium",
+        x: Double? = nil, y: Double? = nil, style: String = "automatic", tint: String = "blue", createdAt: Date
+    ) {
+        self.style = style
+        self.tint = tint
         self.id = id
         self.widgetID = widgetID
         self.settings = settings

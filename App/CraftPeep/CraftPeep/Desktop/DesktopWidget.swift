@@ -21,6 +21,112 @@ struct DesktopWidgetItem: Identifiable, Equatable {
 
     var id: String { instance.id }
     var size: WidgetSize { WidgetSize(rawValue: instance.size) ?? .medium }
+    var appearance: WidgetAppearance { WidgetAppearance(instance) }
+}
+
+// MARK: - Appearance
+
+/// How a widget is drawn, chosen per widget, in the spirit of the system's own widget styles.
+enum WidgetStyle: String, CaseIterable, Identifiable {
+    /// Translucent, following the Mac's light or dark appearance.
+    case automatic
+    case light
+    case dark
+    /// Mostly see-through, letting the wallpaper show.
+    case clear
+    /// Filled with the widget's colour.
+    case tinted
+
+    var id: String { rawValue }
+
+    var label: String {
+        switch self {
+        case .automatic: "Automatic"
+        case .light: "Light"
+        case .dark: "Dark"
+        case .clear: "Clear"
+        case .tinted: "Tinted"
+        }
+    }
+}
+
+enum WidgetTint: String, CaseIterable, Identifiable {
+    case blue, purple, pink, red, orange, yellow, green, teal, graphite
+
+    var id: String { rawValue }
+
+    var label: String { rawValue.capitalized }
+
+    var color: Color {
+        switch self {
+        case .blue: .blue
+        case .purple: .purple
+        case .pink: .pink
+        case .red: .red
+        case .orange: .orange
+        case .yellow: .yellow
+        case .green: .green
+        case .teal: .teal
+        case .graphite: Color(white: 0.45)
+        }
+    }
+}
+
+struct WidgetAppearance: Equatable {
+    var style: WidgetStyle
+    var tint: WidgetTint
+
+    static let standard = WidgetAppearance(style: .automatic, tint: .blue)
+
+    init(style: WidgetStyle, tint: WidgetTint) {
+        self.style = style
+        self.tint = tint
+    }
+
+    /// Unknown stored values fall back to the defaults rather than failing.
+    init(_ instance: WidgetInstance) {
+        style = WidgetStyle(rawValue: instance.style) ?? .automatic
+        tint = WidgetTint(rawValue: instance.tint) ?? .blue
+    }
+
+    /// Light, dark and tinted widgets look the same whatever the Mac is set to; the others follow it.
+    var colorScheme: ColorScheme? {
+        switch style {
+        case .light: .light
+        case .dark, .tinted: .dark
+        case .automatic, .clear: nil
+        }
+    }
+
+    /// What the widget file's "accent" colour means here. On a tinted widget the tint is the background,
+    /// so headings turn white; on a light one, yellow is deepened so it stays readable.
+    var accent: Color {
+        switch style {
+        case .tinted: .white
+        case .light where tint == .yellow: tint.color.mix(with: .black, by: 0.3)
+        default: tint.color
+        }
+    }
+
+    @ViewBuilder
+    var background: some View {
+        let shape = RoundedRectangle(cornerRadius: DesktopWidgetContent.cornerRadius, style: .continuous)
+        switch style {
+        case .automatic:
+            shape.fill(.regularMaterial)
+        case .light:
+            shape.fill(Color(white: 0.98))
+        case .dark:
+            shape.fill(Color(white: 0.11))
+        case .clear:
+            shape.fill(.ultraThinMaterial.opacity(0.55))
+        case .tinted:
+            shape.fill(LinearGradient(
+                colors: [tint.color.mix(with: .white, by: 0.12), tint.color.mix(with: .black, by: 0.22)],
+                startPoint: .top, endPoint: .bottom
+            ))
+        }
+    }
 }
 
 extension WidgetSize {
@@ -133,8 +239,26 @@ struct DesktopWidgetView: View {
 
     var body: some View {
         let item = model.widgets.first { $0.id == instanceID }
-        DesktopWidgetContent(state: item?.state ?? .loading, name: item?.definition.name ?? "Widget") { model.perform($0) }
+        DesktopWidgetContent(
+            state: item?.state ?? .loading, name: item?.definition.name ?? "Widget", appearance: item?.appearance ?? .standard
+        ) { model.perform($0) }
             .contextMenu {
+                Menu("Appearance") {
+                    ForEach(WidgetStyle.allCases) { style in
+                        Toggle(style.label, isOn: Binding(
+                            get: { item?.appearance.style == style },
+                            set: { if $0 { Task { await model.setWidgetAppearance(instanceID, style: style) } } }
+                        ))
+                    }
+                }
+                Menu("Colour") {
+                    ForEach(WidgetTint.allCases) { tint in
+                        Toggle(tint.label, isOn: Binding(
+                            get: { item?.appearance.tint == tint },
+                            set: { if $0 { Task { await model.setWidgetAppearance(instanceID, tint: tint) } } }
+                        ))
+                    }
+                }
                 Menu("Size") {
                     ForEach([WidgetSize.small, .medium, .large], id: \.self) { size in
                         Toggle(size.label, isOn: Binding(
@@ -155,13 +279,32 @@ struct DesktopWidgetView: View {
     }
 }
 
+/// On a coloured background the system's label colours are translucent and wash out; use solid white
+/// and two steps of it instead.
+private struct TintedText: ViewModifier {
+    let isTinted: Bool
+
+    func body(content: Content) -> some View {
+        if isTinted {
+            content.foregroundStyle(.white, .white.opacity(0.8), .white.opacity(0.62))
+        } else {
+            content
+        }
+    }
+}
+
 /// Draws a widget's current state inside the standard widget chrome. Used on the desktop and for previews.
 struct DesktopWidgetContent: View {
+    /// The system's widgets use a large, continuous corner; matching it is most of what makes one feel native.
+    static let cornerRadius: CGFloat = 22
+
     let state: DesktopWidgetState
     let name: String
+    var appearance: WidgetAppearance = .standard
     let perform: (RenderAction) -> Void
 
     var body: some View {
+        let shape = RoundedRectangle(cornerRadius: Self.cornerRadius, style: .continuous)
         VStack(alignment: .leading, spacing: 0) {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -169,11 +312,17 @@ struct DesktopWidgetContent: View {
             footer
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 16))
-        .overlay(RoundedRectangle(cornerRadius: 16).strokeBorder(.quaternary))
+        .background { appearance.background }
+        .clipShape(shape)
+        .overlay(shape.strokeBorder(.white.opacity(appearance.style == .light ? 0 : 0.08)))
+        .overlay(shape.strokeBorder(.black.opacity(appearance.style == .light ? 0.08 : 0)))
+        .modifier(TintedText(isTinted: appearance.style == .tinted))
+        .environment(\.colorScheme, appearance.colorScheme ?? systemScheme)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(name) widget")
     }
+
+    @Environment(\.colorScheme) private var systemScheme
 
     @ViewBuilder
     private var content: some View {
@@ -183,7 +332,7 @@ struct DesktopWidgetContent: View {
                 .controlSize(.small)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .ready(let node, _):
-            WidgetView(node: node, onAction: perform)
+            WidgetView(node: node, accent: appearance.accent, onAction: perform)
         case .empty(let text):
             message(text, symbol: "tray")
         case .failed(let reason):

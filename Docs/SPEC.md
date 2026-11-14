@@ -52,7 +52,7 @@ Structure: `list` (repeat a template over an array), `button`.
 
 Any component can take `when` (conditional render) and `action` (`openURL`, `copy`, `refresh`).
 
-Colours are tokens (`primary`, `secondary`, `accent`, `positive`, `negative`), hex values, or expressions that resolve to either. Themes remap the tokens, so one widget works across all themes without edits.
+Colours are tokens (`primary`, `secondary`, `accent`, `positive`, `negative`), hex values, or expressions that resolve to either. `accent` is the colour the user chose for that widget, and `primary` and `secondary` follow the widget's style (solid white on a tinted widget), so a widget file should use tokens rather than hex values for text. Themes remap the tokens, so one widget works across all themes without edits.
 
 ## Expressions
 

@@ -29,7 +29,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Full-text search over titles and excerpts.
 - Per-source health: a failing feed is listed with its error and never blocks the others.
 - Works offline from the local store.
-- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets, or, with AI on, by describing what you want. Widgets read the local store;
+- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets, or, with AI on, by describing what you want. Each widget can be Automatic, Light, Dark, Clear or Tinted, in one of nine colours. Widgets read the local store;
   they cannot fetch, run commands or read files.
 
 ## Repository layout

@@ -18,7 +18,8 @@ public struct GRDBWidgetInstanceRepository: WidgetInstanceRepository {
                     id: row["id"], widgetID: row["widget_id"],
                     // Settings that cannot be read are dropped; the widget then uses its defaults.
                     settings: (try? JSONDecoder().decode([String: WidgetSettingValue].self, from: Data(settingsJSON.utf8))) ?? [:],
-                    size: row["size"], x: row["x"], y: row["y"], createdAt: Date(unixSeconds: created)
+                    size: row["size"], x: row["x"], y: row["y"], style: row["style"], tint: row["tint"],
+                    createdAt: Date(unixSeconds: created)
                 )
             }
         }
@@ -31,10 +32,15 @@ public struct GRDBWidgetInstanceRepository: WidgetInstanceRepository {
         try await database.writer.write { db in
             try db.execute(
                 sql: """
-                    INSERT INTO widget_instance (id, widget_id, settings, size, x, y, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)
-                    ON CONFLICT(id) DO UPDATE SET settings = excluded.settings, size = excluded.size, x = excluded.x, y = excluded.y
+                    INSERT INTO widget_instance (id, widget_id, settings, size, x, y, style, tint, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    ON CONFLICT(id) DO UPDATE SET settings = excluded.settings, size = excluded.size, x = excluded.x, y = excluded.y,
+                                                  style = excluded.style, tint = excluded.tint
                     """,
-                arguments: [instance.id, instance.widgetID, settings, instance.size, instance.x, instance.y, instance.createdAt.unixSeconds]
+                arguments: [
+                    instance.id, instance.widgetID, settings, instance.size, instance.x, instance.y,
+                    instance.style, instance.tint, instance.createdAt.unixSeconds
+                ]
             )
         }
     }

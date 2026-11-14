@@ -219,6 +219,8 @@ private struct Store {
         first.x = 120
         first.y = 340.5
         first.size = "small"
+        first.style = "tinted"
+        first.tint = "orange"
         first.settings["subject"] = .string("all")
         try await repository.save(first)
         #expect(try await repository.allInstances().first == first)
@@ -235,5 +237,7 @@ private struct Store {
         let instance = try #require(try await GRDBWidgetInstanceRepository(database: database).allInstances().first)
         #expect(instance.settings.isEmpty)
         #expect(instance.x == nil)
+        #expect(instance.style == "automatic")      // rows written before appearance existed get the defaults
+        #expect(instance.tint == "blue")
     }
 }

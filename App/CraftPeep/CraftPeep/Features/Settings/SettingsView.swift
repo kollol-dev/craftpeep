@@ -18,7 +18,7 @@ struct SettingsView: View {
             WidgetSettingsView(model: model)
                 .tabItem { Label("Widgets", systemImage: "rectangle.on.rectangle") }
         }
-        .frame(width: 640, height: 560)
+        .frame(width: 700, height: 620)
     }
 }
 
