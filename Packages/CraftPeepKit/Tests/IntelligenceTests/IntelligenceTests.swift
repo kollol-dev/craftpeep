@@ -83,6 +83,59 @@ func digest(
         #expect(Set(assignments.map(\.target)).count == 2)
     }
 
+    @Test func nearIdenticalSubmissionsToACommunitySourceJoin() {
+        // Seen on 14 November 2026: three Hacker News submissions of the same news shown as three stories.
+        let assignments = clusterer.assign(
+            new: [
+                digest(1, source: 9, tier: .community, title: "FAA issues national ground stop", hoursAgo: 6),
+                digest(2, source: 9, tier: .community, title: "FAA Issues National Ground Stop", hoursAgo: 5),
+                digest(3, source: 9, tier: .community, title: "FAA lifted National Ground Stop at 0119Z", hoursAgo: 2)
+            ],
+            existing: []
+        )
+        let target = Dictionary(uniqueKeysWithValues: assignments.map { ($0.articleID, $0.target) })
+        #expect(target[1] == target[2])
+        // The stop being lifted is a later development, not a duplicate, even though most words match.
+        #expect(target[3] != target[1])
+    }
+
+    @Test func personalPostsJoinOnlyByLink() {
+        let assignments = clusterer.assign(
+            new: [
+                digest(1, source: 9, tier: .community, title: "Show HN: A terminal file manager written in Go", hoursAgo: 5),
+                digest(2, source: 3, tier: .reporting, title: "A terminal file manager written in Zig", hoursAgo: 4),
+                digest(3, source: 9, tier: .community, title: "Show HN: A terminal file manager written in Zig", hoursAgo: 3),
+                digest(4, source: 3, tier: .reporting, title: "Coverage of the Go file manager", url: "https://site9.example/1", hoursAgo: 2)
+            ],
+            existing: []
+        )
+        let target = Dictionary(uniqueKeysWithValues: assignments.map { ($0.articleID, $0.target) })
+        #expect(Set([target[1], target[2], target[3]]).count == 3)
+        #expect(target[4] == target[1])                         // same link: still the same story
+        #expect(Clusterer.isMatchableByTitle("Ask HN: How do you keep up?") == false)
+        #expect(Clusterer.isMatchableByTitle("Showcase: new HN features"))
+    }
+
+    @Test func aPublishersOwnNearIdenticalPostsStayApart() {
+        let assignments = clusterer.assign(
+            new: [
+                digest(1, source: 2, tier: .reporting, title: "Helix quarterly earnings beat expectations", hoursAgo: 30),
+                digest(2, source: 2, tier: .reporting, title: "Helix quarterly earnings beat expectations", hoursAgo: 2)
+            ],
+            existing: []
+        )
+        #expect(Set(assignments.map(\.target)).count == 2)
+    }
+
+    @Test func aCommunityDuplicateJoinsAnExistingStory() {
+        let existing = [digest(1, source: 9, tier: .community, cluster: 41, title: "Kestrel 2.0 released with a rewritten query planner", hoursAgo: 8)]
+        let assignments = clusterer.assign(
+            new: [digest(2, source: 9, tier: .community, title: "Kestrel 2.0 Released with a Rewritten Query Planner", hoursAgo: 1)],
+            existing: existing
+        )
+        #expect(assignments.first?.target == .existing(41))
+    }
+
     @Test func sameHeadlineOutsideTheWindowIsADifferentStory() {
         let title = "Major Stratus Cloud outage takes down thousands of websites"
         let assignments = clusterer.assign(
@@ -108,6 +161,7 @@ func digest(
                 let source: Int64
                 let hoursAgo: Double
                 let title: String
+                let tier: SourceTier?
             }
             let headlines: [Headline]
         }
@@ -115,7 +169,7 @@ func digest(
         let headlines = try JSONDecoder().decode(File.self, from: Data(contentsOf: url)).headlines
 
         let articles = headlines.enumerated().map { index, headline in
-            digest(Int64(index), source: headline.source, title: headline.title, hoursAgo: headline.hoursAgo)
+            digest(Int64(index), source: headline.source, tier: headline.tier ?? .reporting, title: headline.title, hoursAgo: headline.hoursAgo)
         }
         let assignments = clusterer.assign(new: articles, existing: [])
         var predicted: [Int64: ClusterAssignment.Target] = [:]

@@ -75,6 +75,7 @@ Known limits carried forward:
 
 - Title-only clustering will keep missing differently worded reports of one story. The next step, if it matters in daily use, is rarity weighting of tokens or on-device sentence embeddings (tier 3). Measure first.
 - Two Hacker News submissions pointing at a site's home page would merge by URL.
+- Fixed 21 November 2026: near-identical submissions to one community source now join, and Show/Ask/Tell/Launch HN posts join only by link. Labelled fixture after the change (64 headlines): precision 1.00, recall 0.74. No same-source duplicates were on the live front page that day, so the live effect is unmeasured; the reported case is a test.
 - Entity tagging is by name, so "Claude Monet" tags Anthropic. Recorded as a test.
 - A cluster is not recomputed when one of its sources is deleted; there is no way to delete a source yet.
 - Most stories have no kind. Raising coverage needs either many more rules or the optional model pass planned for v0.2.

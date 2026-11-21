@@ -16,6 +16,8 @@ public struct Clusterer: Sendable {
     public var containmentThreshold = 0.7
     /// Minimum number of distinctive tokens two headlines must share.
     public var minimumShared = 3
+    /// Two items from the same community source join only when their headlines are nearly identical.
+    public var sameSourceThreshold = 0.8
 
     public init() {}
 
@@ -62,6 +64,7 @@ public struct Clusterer: Sendable {
             let index = placed.count
             placed.append(Placed(sourceID: article.sourceID, date: article.date, tokens: tokens, group: group))
             if byURL[article.canonicalURL] == nil { byURL[article.canonicalURL] = group }
+            guard Self.isMatchableByTitle(article.title) else { return }
             for token in tokens where weight(token) == 1 {
                 byToken[token, default: []].append(index)
             }
@@ -83,7 +86,8 @@ public struct Clusterer: Sendable {
 
             if let sameURL = byURL[article.canonicalURL] {
                 group = sameURL
-            } else if let similar = bestMatch(for: article, tokens: tokens, placed: placed, byToken: byToken, weight: weight) {
+            } else if Self.isMatchableByTitle(article.title),
+                      let similar = bestMatch(for: article, tokens: tokens, placed: placed, byToken: byToken, weight: weight) {
                 group = similar
             } else {
                 group = .new(nextKey)
@@ -111,20 +115,35 @@ public struct Clusterer: Sendable {
         var best: (similarity: Double, group: Group)?
         for (candidate, count) in shared where count >= minimumShared {
             let other = placed[candidate]
-            // Two posts from one source with similar titles are usually a series, not one story.
-            guard other.sourceID != article.sourceID,
-                  abs(other.date.timeIntervalSince(article.date)) <= window
-            else { continue }
+            guard abs(other.date.timeIntervalSince(article.date)) <= window else { continue }
 
             let similarity = Self.similarity(tokens, other.tokens, weight: weight)
-            let containment = Self.containment(tokens, other.tokens, weight: weight)
-            guard similarity >= threshold || containment >= containmentThreshold else { continue }
-            let strength = max(similarity, containment)
+            let strength: Double
+            if other.sourceID == article.sourceID {
+                // A publisher's own posts with similar titles are usually a series, so they stay apart.
+                // A community source is different: several people submit the same news, so nearly
+                // identical titles there are one story. Containment is not enough on its own here:
+                // "X issues ground stop" and "X lifts ground stop" are follow-ups, not duplicates.
+                guard article.sourceTier == .community, similarity >= sameSourceThreshold else { continue }
+                strength = similarity
+            } else {
+                let containment = Self.containment(tokens, other.tokens, weight: weight)
+                guard similarity >= threshold || containment >= containmentThreshold else { continue }
+                strength = max(similarity, containment)
+            }
             if strength > (best?.similarity ?? 0) {
                 best = (strength, other.group)
             }
         }
         return best?.group
+    }
+
+    /// Show HN, Ask HN, Tell HN and Launch HN posts are each someone's own project or question. Two of them
+    /// can share most of their words ("a file manager written in Go", "... in Zig") and still be unrelated,
+    /// so they join a story only by sharing its link.
+    static func isMatchableByTitle(_ title: String) -> Bool {
+        let lowered = title.lowercased()
+        return !["show hn", "ask hn", "tell hn", "launch hn"].contains { lowered.hasPrefix($0) }
     }
 
     static func containment(_ a: Set<String>, _ b: Set<String>, weight: (String) -> Double) -> Double {

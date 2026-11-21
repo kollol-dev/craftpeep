@@ -1,5 +1,5 @@
 {
-  "note": "Synthetic headlines with hand-assigned story groups. Companies and products are invented. Items sharing a group are the same story; everything else must stay apart. Groups 11 and 12 are same-story pairs with little wording in common, kept to keep the recall figure honest.",
+  "note": "Synthetic headlines with hand-assigned story groups. Source 9 is a community source (like Hacker News): group 13 is one story submitted twice; groups 14 and 15 must stay apart from it and from group 45. Companies and products are invented. Items sharing a group are the same story; everything else must stay apart. Groups 11 and 12 are same-story pairs with little wording in common, kept to keep the recall figure honest.",
   "headlines": [
     { "group": 1, "source": 1, "hoursAgo": 5, "title": "Northwind unveils Orion 3, its most capable reasoning model yet" },
     { "group": 1, "source": 2, "hoursAgo": 4, "title": "Northwind's Orion 3 model arrives with stronger reasoning and lower prices" },
@@ -41,6 +41,12 @@
 
     { "group": 12, "source": 1, "hoursAgo": 22, "title": "Stratus Cloud blames configuration error for Tuesday's outage" },
     { "group": 12, "source": 6, "hoursAgo": 21, "title": "Root cause of the Stratus incident: a bad config push" },
+
+    { "group": 13, "source": 9, "tier": "community", "hoursAgo": 6, "title": "Pinecrest OS 4 now available for all devices" },
+    { "group": 13, "source": 9, "tier": "community", "hoursAgo": 5, "title": "Pinecrest OS 4 Now Available for All Devices" },
+
+    { "group": 14, "source": 9, "tier": "community", "hoursAgo": 3, "title": "Pinecrest OS 4 rollout paused for all devices" },
+    { "group": 15, "source": 9, "tier": "community", "hoursAgo": 2, "title": "Show HN: A terminal file manager written in Go" },
 
     { "group": 20, "source": 1, "hoursAgo": 3, "title": "Northwind unveils Orion 3 Mini for mobile devices" },
     { "group": 21, "source": 3, "hoursAgo": 17, "title": "Helix to acquire observability startup Tracewell for $300m" },

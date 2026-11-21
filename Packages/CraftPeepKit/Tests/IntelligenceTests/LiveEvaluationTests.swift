@@ -40,6 +40,14 @@ struct LiveEvaluationTests {
             }
         }
 
+        print("EVAL --- single-source clusters with several members")
+        for cluster in all where cluster.sourceCount == 1 && cluster.memberCount > 1 {
+            print("EVAL [\(cluster.memberCount) from \(cluster.sourceNames.first ?? "?")] \(cluster.headline)")
+            for story in try await clusters.stories(inCluster: cluster.id) {
+                print("EVAL      \(story.title)")
+            }
+        }
+
         var kinds: [String: Int] = [:]
         for cluster in all { kinds[cluster.kind?.rawValue ?? "unclassified", default: 0] += 1 }
         print("EVAL --- kinds: \(kinds.sorted { $0.value > $1.value }.map { "\($0.key)=\($0.value)" }.joined(separator: " "))")

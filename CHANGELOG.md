@@ -4,6 +4,11 @@ Significant changes, newest first. Nothing has been released yet.
 
 ## Unreleased
 
+### Fixed
+
+- Several Hacker News submissions of the same news no longer show as separate stories: near-identical headlines from one community source now join (similarity of 0.8 or more). A publisher's own similar posts still stay apart, and a follow-up such as a ground stop being lifted stays separate from the stop itself.
+- Show HN, Ask HN, Tell HN and Launch HN posts join a story only by sharing its link. Two unrelated projects with similar titles had been merged.
+
 ### Added
 
 - Widget appearance (M6c). Five styles (Automatic, Light, Dark, Clear, Tinted) and nine colours per widget, chosen from the right-click menu or in Settings → Widgets with a live preview. Widgets now use the system widgets' continuous corner, and both bundled widgets have a coloured symbol header. Schema v8.
