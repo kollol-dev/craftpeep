@@ -293,6 +293,8 @@ public struct StoryFilter: Sendable, Equatable {
     public var sourceID: Int64?
     /// Only stories reported by a source in this folder.
     public var folder: String?
+    /// Only stories reported by at least one of these sources. An empty set matches nothing.
+    public var sourceIDs: Set<Int64>?
 
     public struct Subject: Sendable, Equatable {
         public var entityNames: [String]
@@ -311,10 +313,12 @@ public struct StoryFilter: Sendable, Equatable {
         kinds: Set<StoryKind>? = nil,
         keptOnly: Bool = false,
         sourceID: Int64? = nil,
-        folder: String? = nil
+        folder: String? = nil,
+        sourceIDs: Set<Int64>? = nil
     ) {
         self.sourceID = sourceID
         self.folder = folder
+        self.sourceIDs = sourceIDs
         self.since = since
         self.query = query
         self.subject = subject

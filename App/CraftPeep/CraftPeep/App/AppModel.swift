@@ -124,6 +124,10 @@ final class AppModel {
     private(set) var widgetBuilderMessage: String?
     private(set) var isBuildingWidget = false
     private let widgetController = DesktopWidgetController()
+    let alertNotifier = AlertNotifier()
+    /// Opens the main window. Captured from a view, since only views can open SwiftUI windows.
+    var openMainWindow: (() -> Void)?
+    private(set) var isRunningAlert = false
 
     var section = SidebarSection.overview {
         didSet {
@@ -184,6 +188,7 @@ final class AppModel {
         let summaries: SummaryService
         let briefings: BriefingService
         let widgetBuilder: WidgetBuilder
+        let alerts: any AlertRepository
     }
 
     private let services: Services?
@@ -225,7 +230,8 @@ final class AppModel {
                 github: GitHubService(http: URLSessionHTTPClient(), store: repositories),
                 summaries: SummaryService(gateway: gateway, clusters: clusters, summaries: GRDBSummaryRepository(database: database)),
                 briefings: BriefingService(gateway: gateway, briefings: GRDBBriefingRepository(database: database)),
-                widgetBuilder: WidgetBuilder(gateway: gateway)
+                widgetBuilder: WidgetBuilder(gateway: gateway),
+                alerts: GRDBAlertRepository(database: database)
             )
         } catch {
             services = nil
@@ -233,6 +239,8 @@ final class AppModel {
         }
         // Runs for the life of the app, whether or not a window is open.
         Task { await self.run() }
+        alertNotifier.onOpen = { [weak self] clusterID, url in self?.openFromAlert(clusterID: clusterID, url: url) }
+        Task { await self.runAlertScheduler() }
     }
 
     var selectedItem: StoryItem? {
@@ -1081,6 +1089,102 @@ final class AppModel {
             if !source.enabled { try? await services.sources.setEnabled(true, sourceID: source.id) }
             await refresh(onlyDue: true)
         }
+        sources = (try? await services.sources.allSources()) ?? sources
+    }
+
+    // MARK: - Trending alert
+
+    private static let alertTick: Duration = .seconds(60)
+    /// How long the alert waits for a refresh before choosing from what is already stored.
+    private static let alertRefreshLimit: Duration = .seconds(120)
+
+    private func runAlertScheduler() async {
+        while !Task.isCancelled {
+            if AlertPreferences.isEnabled,
+               AlertPreferences.schedule.isDue(now: Date(), lastRun: AlertPreferences.lastRun, calendar: .current) {
+                _ = await runTrendingAlert(test: false)
+            }
+            try? await Task.sleep(for: Self.alertTick, tolerance: .seconds(10))
+        }
+    }
+
+    /// Refreshes, picks the most covered new stories from the chosen sources and posts one notification.
+    /// A test run ignores what was sent before, records nothing, and says so when nothing qualifies.
+    /// Returns a line for Settings.
+    func runTrendingAlert(test: Bool) async -> String {
+        guard let services else { return "CraftPeep is not running." }
+        guard !isRunningAlert else { return "The alert is already running." }
+        isRunningAlert = true
+        defer { isRunningAlert = false }
+        let started = Date()
+        // Marked first, so a slow refresh cannot let the next tick run the alert twice.
+        if !test { AlertPreferences.lastRun = started }
+
+        let chosen = Set(sources.filter { $0.enabled && $0.alertsEnabled }.map(\.id))
+        guard !chosen.isEmpty else { return "Choose at least one source below." }
+        guard await alertNotifier.requestPermission() else {
+            return "macOS is not allowing CraftPeep's notifications. Turn them on in System Settings → Notifications."
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await self.refresh() }
+            group.addTask { try? await Task.sleep(for: Self.alertRefreshLimit) }
+            await group.next()
+            group.cancelAll()
+        }
+
+        let now = Date()
+        let selector = TrendingAlertSelector(strictness: AlertPreferences.strictness)
+        do {
+            let candidates = try await services.clusters.summaries(
+                StoryFilter(since: now.addingTimeInterval(-selector.window), sourceIDs: chosen)
+            )
+            let sent = test ? [] : try await services.alerts.sentClusterIDs(since: now.addingTimeInterval(-7 * 86_400))
+            let picked = selector.select(candidates, alreadySent: sent, now: now)
+            guard let message = AlertMessage(stories: picked) else {
+                guard test else { return "Nothing was trending enough at \(started.formatted(date: .omitted, time: .shortened))." }
+                try await alertNotifier.post(
+                    title: "Test alert from CraftPeep",
+                    body: "Notifications work. No story from your chosen sources is trending enough right now.",
+                    clusterID: nil, url: nil
+                )
+                return "Sent a test notification. Nothing qualifies right now."
+            }
+            try await alertNotifier.post(
+                title: test ? "Test: \(message.title)" : message.title,
+                body: message.body, clusterID: message.clusterID, url: picked.first?.url
+            )
+            if !test { try await services.alerts.recordSent(message.clusterIDs, at: now) }
+            return "Sent \(picked.count == 1 ? "1 story" : "\(picked.count) stories") at \(now.formatted(date: .omitted, time: .shortened))."
+        } catch {
+            return "The alert could not be sent. \(error.localizedDescription)"
+        }
+    }
+
+    /// A click on an alert: show the story in the main window, or open the original if it is not listed.
+    func openFromAlert(clusterID: Int64, url: String?) {
+        Task {
+            if section != .overview { section = .overview }
+            await reload()
+            if stories.contains(where: { $0.id == clusterID }), let openMainWindow {
+                openMainWindow()
+                NSApp.activate()
+                selection = clusterID
+            } else if let url {
+                Self.openWebLink(url)
+            }
+        }
+    }
+
+    func setAlertsEnabled(_ enabled: Bool, source: Source) async {
+        guard let services else { return }
+        try? await services.sources.setAlertsEnabled(enabled, sourceID: source.id)
+        sources = (try? await services.sources.allSources()) ?? sources
+    }
+
+    func setAlertsEnabled(_ enabled: Bool, folder: String) async {
+        guard let services else { return }
+        try? await services.sources.setAlertsEnabled(enabled, folder: folder)
         sources = (try? await services.sources.allSources()) ?? sources
     }
 

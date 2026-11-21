@@ -7,3 +7,5 @@ build
 xcuserdata/
 DerivedData/
 .env
+dist/
+build-release/
