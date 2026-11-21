@@ -364,7 +364,12 @@ Tiered, cheapest first, each tier measurable:
 2. **Title similarity inside a 72-hour window.** Normalised token sets (stop words removed, light stemming), Jaccard above a threshold, with a boost when both titles share a named entity from the entity list. Candidate lookup uses FTS on the two or three rarest title tokens, so it is not quadratic.
 3. **Deferred:** on-device sentence embeddings (Apple's NaturalLanguage framework) if tier 2's miss rate, measured against a hand-labelled fixture set, is unacceptable. No vector database either way; a few thousand vectors fit a brute-force scan.
 
-A labelled fixture of roughly 200 real headlines with expected groupings is built in M3 so thresholds are tuned against data, not intuition. Over-merging is worse than under-merging: a missed merge shows two rows, a wrong merge hides a story.
+A labelled fixture with expected groupings keeps thresholds tuned against data, not intuition. As built it holds 64 synthetic headlines (not the roughly 200 real ones first planned, because real feeds are not committed to this open repository). Over-merging is worse than under-merging: a missed merge shows two rows, a wrong merge hides a story.
+
+Two exceptions to title matching, both found in real data:
+
+- Items from the same source join only if it is a community source and their headlines are nearly identical (similarity 0.8 or more), because several people submit the same news to Hacker News. A publisher's own similar posts are usually a series and stay apart.
+- Show HN, Ask HN, Tell HN and Launch HN posts join a story only by sharing its link, because each is someone's own project or question.
 
 ## Classification
 
