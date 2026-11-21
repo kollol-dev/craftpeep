@@ -187,3 +187,56 @@ import Testing
         #expect(earlier?.readAt == now.addingTimeInterval(-600))
     }
 }
+
+
+@Suite struct FolderStoreTests {
+    typealias Store = IntelligenceServiceTests.Store
+
+    @Test func storiesCanBeListedForAFolderAndFoldersRenamedOrRemoved() async throws {
+        let store = try await Store()
+        try await store.add("Northwind Blog", "Introducing Orion 3", url: "https://northwind.example/orion-3", hoursAgo: 3)
+        try await store.add("Wire", "The quiet death of the headphone jack", url: "https://wire.example/jack", hoursAgo: 1)
+        _ = try await store.service.process()
+
+        try await store.sources.setFolder("  AI   Labs ", sourceID: store.ids["Northwind Blog"]!)
+        try await store.sources.setFolder("", sourceID: store.ids["Wire"]!)
+        let northwind = try await store.sources.allSources().first(where: { $0.name == "Northwind Blog" })
+        #expect(northwind?.folder == "AI Labs")                                // whitespace tidied
+        #expect(try await store.sources.allSources().first(where: { $0.name == "Wire" })?.folder == nil)
+
+        let inFolder = try await store.clusters.summaries(StoryFilter(folder: "AI Labs"))
+        #expect(inFolder.map(\.headline) == ["Introducing Orion 3"])
+
+        try await store.sources.renameFolder("AI Labs", to: "Labs")
+        #expect(try await store.clusters.summaries(StoryFilter(folder: "Labs")).count == 1)
+        #expect(try await store.clusters.summaries(StoryFilter(folder: "AI Labs")).isEmpty)
+
+        try await store.sources.removeFolder("Labs")
+        #expect(try await store.sources.allSources().allSatisfy { $0.folder == nil })
+        #expect(try await store.sources.allSources().count == 4)                // removing a folder keeps its sources
+    }
+
+    @Test func catalogueFoldersAreFilledInOnceAndThenLeftToTheUser() async throws {
+        // A database from before folders existed: the source is stored, with no folder and no marker.
+        let database = try AppDatabase()
+        try await database.writer.write { db in
+            try db.execute(sql: "INSERT INTO source (kind, name, url, tier, tier_origin, refresh_secs) VALUES ('rss', 'Wire', 'https://wire.example/feed', 'reporting', 'catalog', 1800)")
+            try db.execute(sql: "INSERT INTO source (kind, name, url, tier, tier_origin, refresh_secs) VALUES ('rss', 'Mine', 'https://mine.example/feed', 'unverified', 'user', 1800)")
+        }
+        let sources = GRDBSourceRepository(database: database)
+        let catalogue = [
+            SourceDefinition(kind: .rss, name: "Wire", url: "https://wire.example/feed", tier: .reporting, folder: "Tech News"),
+            SourceDefinition(kind: .rss, name: "Mine", url: "https://mine.example/feed", tier: .reporting, folder: "Tech News")
+        ]
+        try await sources.seed(catalogue)                                       // first launch of the new version
+        var all = try await sources.allSources()
+        #expect(all.first(where: { $0.name == "Wire" })?.folder == "Tech News")
+        #expect(all.first(where: { $0.name == "Mine" })?.folder == nil)          // the user's own source is not touched
+
+        let wire = try #require(all.first(where: { $0.name == "Wire" }))
+        try await sources.setFolder(nil, sourceID: wire.id)
+        try await sources.seed(catalogue)                                       // a later launch
+        all = try await sources.allSources()
+        #expect(all.first(where: { $0.name == "Wire" })?.folder == nil)
+    }
+}

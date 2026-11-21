@@ -35,16 +35,29 @@ enum DebugSnapshot {
             if options.contains("panels") {
                 await model.loadGalleryPreviews()
                 for definition in model.gallery {
-                    show(
-                        DesktopWidgetContent(state: model.galleryPreviews[definition.id] ?? .loading, name: definition.name, perform: { _ in }),
-                        title: "Widget \(definition.name)", size: WidgetSize.medium.contentSize
-                    )
+                    for size in [WidgetSize.small, .medium, .large] {
+                        let state = await model.preview(definition, size: size)
+                        show(
+                            DesktopWidgetContent(
+                                state: state, name: definition.name,
+                                header: WidgetHeader(title: definition.hasViewSetting ? "Overview" : definition.name,
+                                                     symbol: definition.symbol ?? "square", options: definition.hasViewSetting ? model.widgetViewOptions : [],
+                                                     selected: "overview", onSettings: {}),
+                                perform: { _ in }
+                            ),
+                            title: "Widget \(definition.name) \(size.label)", size: size.contentSize
+                        )
+                    }
                 }
-                if let news = model.gallery.first, let state = model.galleryPreviews[news.id] {
+                if let news = model.gallery.first {
+                    let state = await model.preview(news, size: .medium)
                     for style in WidgetStyle.allCases {
-                        let appearance = WidgetAppearance(style: style, tint: style == .tinted ? .orange : .purple)
-                        show(DesktopWidgetContent(state: state, name: news.name, appearance: appearance, perform: { _ in }),
-                             title: "Style \(style.label)", size: WidgetSize.small.contentSize)
+                        let appearance = WidgetAppearance(style: style, tint: style == .tinted ? .indigo : .purple)
+                        show(DesktopWidgetContent(state: state, name: news.name, appearance: appearance,
+                                                  header: WidgetHeader(title: "Overview", symbol: news.symbol ?? "square", options: model.widgetViewOptions,
+                                                                       selected: "overview", onSettings: {}),
+                                                  perform: { _ in }),
+                             title: "Style \(style.label)", size: WidgetSize.medium.contentSize)
                     }
                 }
                 show(WidgetSettingsView(model: model), title: "Widget Settings", size: NSSize(width: 700, height: 620))

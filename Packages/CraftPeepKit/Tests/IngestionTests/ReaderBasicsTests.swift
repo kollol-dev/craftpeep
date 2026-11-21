@@ -130,3 +130,43 @@ import Testing
         #expect(stored.first { $0.url == "https://example.com/feed" }?.tier == .reporting)   // the existing source is untouched
     }
 }
+
+
+@Suite struct OPMLFolderTests {
+    let file = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <opml version="2.0"><body>
+          <outline text="1. AI Labs (first-hand launches)" title="1. AI Labs (first-hand launches)">
+            <outline type="rss" text="Lab One" xmlUrl="https://one.example/feed"/>
+            <outline text="Nested group">
+              <outline type="rss" text="Deep" xmlUrl="https://deep.example/feed"/>
+            </outline>
+            <outline type="rss" text="Lab Two" xmlUrl="https://two.example/feed"/>
+          </outline>
+          <outline type="rss" text="Loose" xmlUrl="https://loose.example/feed"/>
+        </body></opml>
+        """
+
+    @Test func keepsTheNearestFolderForEachFeed() throws {
+        let feeds = try OPML.parse(Data(file.utf8))
+        #expect(feeds.map(\.folder) == ["1. AI Labs (first-hand launches)", "Nested group", "1. AI Labs (first-hand launches)", nil])
+        #expect(OPML.plan(feeds).definitions.map(\.folder) == feeds.map(\.folder))
+    }
+
+    @Test func exportWritesFoldersAndReadsBack() throws {
+        let sources = [
+            Source(id: 1, kind: .rss, name: "B", url: "https://b.example/feed", tier: .reporting, folder: "News & Views"),
+            Source(id: 2, kind: .rss, name: "A", url: "https://a.example/feed", tier: .reporting, folder: "AI"),
+            Source(id: 3, kind: .rss, name: "C", url: "https://c.example/feed", tier: .reporting)
+        ]
+        let back = try OPML.parse(OPML.document(for: sources))
+        #expect(back.map(\.xmlURL) == ["https://a.example/feed", "https://b.example/feed", "https://c.example/feed"])   // folders sorted, loose last
+        #expect(back.map(\.folder) == ["AI", "News & Views", nil])
+    }
+
+    @Test func catalogueEntriesAllHaveAFolder() throws {
+        let definitions = try SourceCatalogue.bundled()
+        #expect(definitions.allSatisfy { $0.folder != nil })
+        #expect(Set(definitions.compactMap(\.folder)) == ["Community", "Tech News", "AI Labs", "Developer", "Analysis"])
+    }
+}

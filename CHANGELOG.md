@@ -4,6 +4,13 @@ Significant changes, newest first. Nothing has been released yet.
 
 ## Unreleased
 
+### Added
+
+- Folders. Each source can sit in one folder, set from Settings → Sources; the sidebar lists folders with their sources and each folder has its own story list. OPML import keeps a file's folders (and files an existing unfoldered source into them); export writes them. Catalogue sources start in Community, Tech News, AI Labs, Developer and Analysis. Schema v10.
+- The News widget's title is a menu: Overview, AI, Latest, Saved or any folder, remembered per widget.
+- A redesigned widget: symbol tile header with an unread count, a featured first story, coloured source tiles, kind tags, and a footer with the update time, refresh and settings. Widget spec gains `symbol`, `where.view`, `width`, `height`, text `design` and the list `index`.
+- A Settings button at the bottom of the main window's sidebar.
+
 ### Fixed
 
 - Feeds that failed after an OPML import now say why in plain words (removed by the publisher, blocked, temporary server problem, moved to plain http) instead of a bare HTTP code.

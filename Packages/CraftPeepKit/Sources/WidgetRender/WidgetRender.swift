@@ -23,6 +23,9 @@ public struct RenderNode: Sendable, Equatable {
     public var radius: Double?
     public var lines: Int?
     public var action: RenderAction?
+    public var width: Double?
+    public var height: Double?
+    public var design: String?
 
     public init(kind: Kind) {
         self.kind = kind
@@ -154,6 +157,9 @@ public enum RenderTree {
             node.padding = component.padding.map { min(max($0, 0), 64) }
             node.radius = component.radius.map { min(max($0, 0), 64) }
             node.lines = component.lines.map { min(max($0, 1), 20) }
+            node.width = component.width.map { min(max($0, 0), 600) }
+            node.height = component.height.map { min(max($0, 0), 600) }
+            node.design = component.design
             node.action = action(component.action, scope)
             return node
         }
@@ -164,8 +170,10 @@ public enum RenderTree {
             let limit = min(component.limit ?? RenderTree.maximumListItems, RenderTree.maximumListItems)
             let name = component.loopVariable ?? "item"
             var built: [RenderNode] = []
-            for element in elements.prefix(max(limit, 0)) {
-                if let node = build(item, scope: scope.adding(name, element)) { built.append(node) }
+            // "index" is the element's position from 0, so a widget can style the first row differently.
+            for (index, element) in elements.prefix(max(limit, 0)).enumerated() {
+                let itemScope = scope.adding(name, element).adding("index", .number(Double(index)))
+                if let node = build(item, scope: itemScope) { built.append(node) }
             }
             return built
         }

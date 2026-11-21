@@ -291,6 +291,8 @@ public struct StoryFilter: Sendable, Equatable {
     public var keptOnly = false
     /// Only stories this source reported (alongside any other sources).
     public var sourceID: Int64?
+    /// Only stories reported by a source in this folder.
+    public var folder: String?
 
     public struct Subject: Sendable, Equatable {
         public var entityNames: [String]
@@ -308,9 +310,11 @@ public struct StoryFilter: Sendable, Equatable {
         subject: Subject? = nil,
         kinds: Set<StoryKind>? = nil,
         keptOnly: Bool = false,
-        sourceID: Int64? = nil
+        sourceID: Int64? = nil,
+        folder: String? = nil
     ) {
         self.sourceID = sourceID
+        self.folder = folder
         self.since = since
         self.query = query
         self.subject = subject

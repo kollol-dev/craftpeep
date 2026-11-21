@@ -278,6 +278,18 @@ Prompted by the owner's OPML file (24 feeds, all working in NetNewsWire). Of the
 - [x] A trust level menu for every source; changing it re-labels stored stories
 - [x] Not done, deliberately: imitating another app's user agent to get past Reddit, or getting past VentureBeat's bot check
 
+### Folders, widget views and widget redesign — complete (21 November 2026)
+
+- [x] One optional folder per source (schema v10); sidebar folders with their own story lists, rename and remove; folder menu per source in Settings → Sources
+- [x] OPML import keeps folders, export writes them; catalogue sources start in five folders
+- [x] News widget view menu: Overview, AI, Latest, Saved, each folder; renaming a folder updates widgets showing it
+- [x] Widget redesign: host-drawn header and footer, featured first story, source tiles, kind tags
+- [x] Settings button in the sidebar
+
+Checked: 276 package tests pass; the app migrated the real database to v10 and filed the 34 catalogue sources into folders; snapshots of both widgets at three sizes and five styles.
+
+Not checked by operating the app: the sidebar folders and the widget's view menu (snapshot mode leaves sidebar chrome blank and cannot click), and the Sources tab of Settings.
+
 ### M7 Desktop experience
 
 - [ ] Multi-display placement, saved layouts, always-on-top, stacks if still wanted

@@ -96,6 +96,13 @@ public enum WidgetSpecLoader {
 /// a test in the runtime checks they match the app's own types.
 public enum WidgetQueryVocabulary {
     public static let collections: Set<String> = ["stories", "repositories"]
+    /// The fixed views; "folder:<name>" is also allowed.
+    public static let views: Set<String> = ["overview", "ai", "latest", "saved"]
+    public static let designs: Set<String> = ["default", "rounded", "serif", "monospaced"]
+
+    public static func isKnownView(_ view: String) -> Bool {
+        views.contains(view) || (view.hasPrefix("folder:") && view.count > "folder:".count)
+    }
     public static let sorts: Set<String> = ["rank", "latest"]
     public static let subjects: Set<String> = ["all", "ai"]
     public static let kinds: Set<String> = [
@@ -118,6 +125,9 @@ extension WidgetDefinition {
         }
         if name.trimmingCharacters(in: .whitespaces).isEmpty {
             issues.append("name must not be empty")
+        }
+        if let symbol, symbol.range(of: #"^[a-z0-9.]{1,60}$"#, options: .regularExpression) == nil {
+            issues.append("symbol '\(symbol)' must be an SF Symbol name such as newspaper.fill")
         }
 
         // View
@@ -217,6 +227,9 @@ extension WidgetDefinition {
                 if let subject = source.filter?.subject, !subject.contains("{{"), !WidgetQueryVocabulary.subjects.contains(subject) {
                     issues.append("\(label): unknown subject '\(subject)'")
                 }
+                if let view = source.filter?.view, !view.contains("{{"), !WidgetQueryVocabulary.isKnownView(view) {
+                    issues.append("\(label): unknown view '\(view)'")
+                }
                 if (source.filter?.entities?.count ?? 0) > 20 {
                     issues.append("\(label): at most 20 entities")
                 }
@@ -233,6 +246,14 @@ extension WidgetDefinition {
         path: String,
         into issues: inout [String]
     ) {
+        for (key, value) in [("width", component.width), ("height", component.height)] {
+            if let value, !(0...600).contains(value) {
+                issues.append("\(path): \(key) must be between 0 and 600")
+            }
+        }
+        if let design = component.design, !WidgetQueryVocabulary.designs.contains(design) {
+            issues.append("\(path): design must be one of default, rounded, serif, monospaced")
+        }
         if component.type == .list {
             if component.each == nil {
                 issues.append("\(path): list needs 'each'")

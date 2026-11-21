@@ -59,58 +59,106 @@ let subjects = ["ai": Subjects.ai]
 }
 
 @Suite struct BundledNewsListTests {
+    func headlines(_ node: RenderNode?) -> [String] {
+        texts(node).filter { $0.hasPrefix("Headline") || $0 == "One" }
+    }
+
     @Test func theBundledWidgetIsValidAndAsksForNothingButTheStore() throws {
         let definition = try BundledWidgets.newsList()
         #expect(definition.spec == "0.2")
+        #expect(definition.symbol == "newspaper.fill")
         #expect(definition.permissions == nil)
         #expect(definition.data?.values.allSatisfy { $0.type == .query } == true)
         #expect(definition.validate().isEmpty)
     }
 
-    @Test func rendersEachSizeFromRankedStories() async throws {
+    @Test func rendersEachSizeWithAFeaturedFirstStory() async throws {
         let definition = try BundledWidgets.newsList()
-        let source = FakeStories((1...12).map { story(Int64($0), "Headline \($0)", sources: $0 == 1 ? ["Blog", "Wire", "HN"] : ["Wire"], kind: $0 == 2 ? .shipping : nil) })
+        var stories = (1...12).map { story(Int64($0), "Headline \($0)") }
+        stories[0] = story(1, "Headline 1", sources: ["Blog", "Wire", "HN"], kind: .shipping)
+        let source = FakeStories(stories)
         let snapshot = await WidgetRuntime.resolve(definition, source: source, subjects: subjects, now: now)
         #expect(snapshot.issues.isEmpty)
         #expect(!snapshot.hasNoResults)
 
         let request = try #require(await source.requests.first)
-        #expect(request.ranked)
-        #expect(request.limit == 10)
-        #expect(request.filter.subject == nil)                                  // "all"
+        #expect(request.ranked)                                              // the default view is Overview
         #expect(request.filter.since == now.addingTimeInterval(-72 * 3600))
 
         let context = ExprContext(now: now)
         let small = RenderTree.build(definition, size: .small, scope: snapshot.scope, context: context)
         #expect(small.issues.isEmpty)
-        #expect(texts(small.root) == ["Top stories", "Headline 1", "Headline 2", "Headline 3"])
+        #expect(headlines(small.root) == ["Headline 1", "Headline 2", "Headline 3"])
 
         let medium = RenderTree.build(definition, size: .medium, scope: snapshot.scope, context: context)
         #expect(medium.issues.isEmpty)
         let mediumTexts = texts(medium.root)
-        #expect(mediumTexts.filter { $0.hasPrefix("Headline") }.count == 6)
-        #expect(mediumTexts.contains { $0.hasPrefix("Blog +2 · ") })            // three sources
-        #expect(mediumTexts.contains { $0.hasPrefix("Wire · ") })
+        #expect(headlines(medium.root).count == 5)
+        #expect(mediumTexts.contains("Shipping"))                            // kind tag on the featured story
+        #expect(mediumTexts.contains { $0.contains("3 sources") })
+        #expect(mediumTexts.contains("B"))                                   // the source's badge letter
+        #expect(mediumTexts.contains { $0.hasPrefix("Wire · ") })            // compact rows say source and time
 
         let large = RenderTree.build(definition, size: .large, scope: snapshot.scope, context: context)
         #expect(large.issues.isEmpty)
-        #expect(texts(large.root).filter { $0.hasPrefix("Headline") }.count == 10)
-        #expect(texts(large.root).contains { $0.hasPrefix("Shipping · Wire · ") })
+        #expect(headlines(large.root).count == 9)
     }
 
-    @Test func settingsChangeTheQueryAndTheView() async throws {
+    @Test func sourceBadgesAreFixedSizeTilesInTheSourcesColour() async throws {
         let definition = try BundledWidgets.newsList()
-        let source = FakeStories([story(1, "One", read: true)])
-        let snapshot = await WidgetRuntime.resolve(
-            definition, settings: ["subject": "ai", "showSources": false], source: source, subjects: subjects, now: now
-        )
-        #expect(await source.requests.first?.filter.subject == Subjects.ai)
+        let snapshot = await WidgetRuntime.resolve(definition, source: FakeStories([story(1, "One"), story(2, "Two")]), subjects: subjects, now: now)
+        func find(_ node: RenderNode?, _ text: String) -> RenderNode? {
+            guard let node else { return nil }
+            if node.text == text { return node }
+            for child in node.children { if let found = find(child, text) { return found } }
+            return nil
+        }
+        let tile = try #require(find(RenderTree.build(definition, size: .small, scope: snapshot.scope).root, "W"))
+        #expect(tile.width == 18 && tile.height == 18)
+        #expect(tile.background == RenderColor(WidgetRuntime.color(for: "Wire")))
+        #expect(tile.design == "rounded")
+    }
 
+    @Test(arguments: [
+        ("overview", true, false, false, nil as String?),
+        ("ai", true, true, false, nil),
+        ("latest", false, false, false, nil),
+        ("saved", false, false, true, nil),
+        ("folder:AI Labs", false, false, false, "AI Labs")
+    ])
+    func eachViewSetsTheFilterAndTheOrder(_ view: String, _ ranked: Bool, _ ai: Bool, _ kept: Bool, _ folder: String?) async throws {
+        let source = FakeStories([story(1, "One")])
+        _ = await WidgetRuntime.resolve(try BundledWidgets.newsList(), settings: ["view": .string(view)], source: source, subjects: subjects, now: now)
+        let request = try #require(await source.requests.first)
+        #expect(request.ranked == ranked)
+        #expect((request.filter.subject == Subjects.ai) == ai)
+        #expect(request.filter.keptOnly == kept)
+        #expect(request.filter.folder == folder)
+    }
+
+    @Test func anUnknownViewIsAnIssueNotACrash() async throws {
+        let source = FakeStories([story(1, "One")])
+        let snapshot = await WidgetRuntime.resolve(try BundledWidgets.newsList(), settings: ["view": "sports"], source: source, subjects: subjects, now: now)
+        #expect(snapshot.issues == ["data.stories: unknown view 'sports'"])
+        #expect(await source.requests.isEmpty)
+    }
+
+    @Test func readStoriesAreDimmedAndSourcesCanBeHidden() async throws {
+        let definition = try BundledWidgets.newsList()
+        let snapshot = await WidgetRuntime.resolve(
+            definition, settings: ["showSources": false], source: FakeStories([story(1, "Lead"), story(2, "One", read: true)]), subjects: subjects, now: now
+        )
         let result = RenderTree.build(definition, size: .medium, scope: snapshot.scope, context: ExprContext(now: now))
-        #expect(texts(result.root) == ["AI", "One"])                            // no source line
-        let headline = try #require(result.root?.children.last?.children.first?.children.first)
-        #expect(headline.color == .secondary)                                   // read stories are dimmed
-        #expect(headline.action == .openURL("https://example.com/1"))
+        func find(_ node: RenderNode?, _ text: String) -> RenderNode? {
+            guard let node else { return nil }
+            if node.text == text { return node }
+            for child in node.children { if let found = find(child, text) { return found } }
+            return nil
+        }
+        let read = try #require(find(result.root, "One"))
+        #expect(read.color == .secondary)
+        #expect(read.action == .openURL("https://example.com/2"))
+        #expect(!texts(result.root).contains { $0.hasPrefix("Wire · ") })   // compact rows lose their source line
     }
 
     @Test func anEmptyStoreIsReportedNotHidden() async throws {
@@ -125,6 +173,16 @@ let subjects = ["ai": Subjects.ai]
         let snapshot = await WidgetRuntime.resolve(try BundledWidgets.newsList(), source: source, subjects: subjects, now: now)
         #expect(snapshot.issues == ["data.stories: could not read stories"])
         #expect(snapshot.hasNoResults)
+    }
+
+    @Test func viewLabelsForTheSwitcher() {
+        #expect(WidgetViews.fixed.map(\.id) == ["overview", "ai", "latest", "saved"])
+        #expect(WidgetViews.label(for: "latest") == "Latest")
+        #expect(WidgetViews.label(for: WidgetViews.folder("AI Labs")) == "AI Labs")
+        #expect(WidgetViews.label(for: "nonsense") == "Overview")
+        #expect(WidgetRuntime.monogram("404 Media") == "4")
+        #expect(WidgetRuntime.monogram("") == "•")
+        #expect(WidgetRuntime.color(for: "The Verge") == WidgetRuntime.color(for: "the verge"))
     }
 }
 
@@ -173,8 +231,8 @@ func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured
         let result = RenderTree.build(definition, size: .medium, scope: snapshot.scope, context: ExprContext(now: now))
         #expect(result.issues.isEmpty)
         let lines = texts(result.root)
-        #expect(lines.first == "Rising on GitHub")
-        #expect(lines.contains("northwind/orion-runtime"))
+        #expect(lines.contains("orion-runtime") && lines.contains("northwind"))   // featured: name and owner
+        #expect(lines.contains("Estimate"))
         #expect(lines.contains { $0.contains("Rust") && $0.contains("28k stars in 10d, est.") })
         #expect(lines.contains { $0.contains("Swift") && $0.contains("+600 stars in 2d") })
 
@@ -187,8 +245,8 @@ func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured
         let source = FakeRepositories(items: items)
         let rust = await WidgetRuntime.resolve(definition, settings: ["language": "Rust"], source: FakeStories([]), repositories: source, subjects: subjects, now: now)
         let rustLines = texts(RenderTree.build(definition, size: .large, scope: rust.scope).root)
-        #expect(rustLines.contains("northwind/orion-runtime") && rustLines.contains("o/three"))
-        #expect(!rustLines.contains("helix-labs/kestrel"))
+        #expect(rustLines.contains("orion-runtime") && rustLines.contains("o/three"))
+        #expect(!rustLines.contains("kestrel") && !rustLines.contains("helix-labs/kestrel"))
 
         let none = await WidgetRuntime.resolve(definition, settings: ["language": "COBOL"], source: FakeStories([]), repositories: source, subjects: subjects, now: now)
         #expect(none.hasNoResults)
@@ -274,7 +332,7 @@ func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured
         let database = try AppDatabase()
         let sources = GRDBSourceRepository(database: database)
         try await sources.seed([
-            SourceDefinition(kind: .rss, name: "Northwind Blog", url: "https://northwind.example/feed", tier: .official),
+            SourceDefinition(kind: .rss, name: "Northwind Blog", url: "https://northwind.example/feed", tier: .official, folder: "Elsewhere"),
             SourceDefinition(kind: .rss, name: "Wire", url: "https://wire.example/feed", tier: .reporting)
         ])
         let ids = Dictionary(uniqueKeysWithValues: try await sources.allSources().map { ($0.name, $0.id) })
@@ -295,11 +353,15 @@ func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured
         let definition = try BundledWidgets.newsList()
         let all = await WidgetRuntime.resolve(definition, source: StoreSource(service: service), subjects: subjects, now: now)
         let allTexts = texts(RenderTree.build(definition, size: .small, scope: all.scope, context: ExprContext(now: now)).root)
-        #expect(allTexts == ["Top stories", "Introducing Orion 3, a new LLM", "The quiet death of the headphone jack"])  // official source ranks first
+        #expect(allTexts.filter { $0.count > 3 } == ["Introducing Orion 3, a new LLM", "The quiet death of the headphone jack"])  // official source ranks first
 
-        let ai = await WidgetRuntime.resolve(definition, settings: ["subject": "ai"], source: StoreSource(service: service), subjects: subjects, now: now)
+        let ai = await WidgetRuntime.resolve(definition, settings: ["view": "ai"], source: StoreSource(service: service), subjects: subjects, now: now)
         let aiTexts = texts(RenderTree.build(definition, size: .small, scope: ai.scope, context: ExprContext(now: now)).root)
-        #expect(aiTexts == ["AI", "Introducing Orion 3, a new LLM"])
+        #expect(aiTexts.filter { $0.count > 3 } == ["Introducing Orion 3, a new LLM"])
+
+        // Folders: only stories from sources filed in that folder.
+        let folderView = await WidgetRuntime.resolve(definition, settings: ["view": "folder:Labs"], source: StoreSource(service: service), subjects: subjects, now: now)
+        #expect(folderView.hasNoResults)
     }
 }
 
@@ -356,6 +418,25 @@ func rising(_ id: Int64, _ name: String, language: String?, stars: Int, measured
         let result = try build(#"{"type":"list","each":"{{ rows }}","as":"row","item":{"type":"list","each":"{{ row }}","item":{"type":"text","text":"x"}}}"#, ["rows": outer])
         func count(_ node: RenderNode?) -> Int { node.map { 1 + $0.children.map(count).reduce(0, +) } ?? 0 }
         #expect(count(result.root) <= RenderTree.maximumNodes + 1)
+    }
+
+    @Test func listRowsKnowTheirIndex() throws {
+        let result = try build(#"{"type":"list","each":"{{ items }}","item":{"type":"text","text":"{{ index == 0 ? 'first: ' : '' }}{{ item }}"}}"#, ["items": ["a", "b"]])
+        #expect(texts(result.root) == ["first: a", "b"])
+    }
+
+    @Test func sizesAndDesignsAreValidatedAndClamped() throws {
+        #expect(throws: WidgetSpecError.self) { try widget(view: #"{"type":"text","text":"x","width":5000}"#) }
+        #expect(throws: WidgetSpecError.self) { try widget(view: #"{"type":"text","text":"x","design":"comic"}"#) }
+        let node = try build(#"{"type":"text","text":"x","width":40,"height":12,"design":"serif"}"#).root
+        #expect(node?.width == 40 && node?.height == 12 && node?.design == "serif")
+        #expect(throws: WidgetSpecError.self) {
+            try WidgetSpecLoader.decode(Data(#"{"spec":"0.2","id":"com.a.b","name":"N","version":"1.0.0","symbol":"<bad>","view":{"default":{"type":"text","text":"x"}}}"#.utf8))
+        }
+        #expect(throws: WidgetSpecError.self) {
+            try widget(data: #"{"s":{"type":"query","from":"stories","where":{"view":"sports"}}}"#, view: #"{"type":"text","text":"x"}"#)
+        }
+        _ = try widget(data: #"{"s":{"type":"query","from":"stories","where":{"view":"folder:AI Labs"}}}"#, view: #"{"type":"text","text":"x"}"#)
     }
 
     @Test func coloursAndNumbers() throws {

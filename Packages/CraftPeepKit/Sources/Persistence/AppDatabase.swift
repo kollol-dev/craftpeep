@@ -243,6 +243,11 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "ALTER TABLE source ADD COLUMN allow_http INTEGER NOT NULL DEFAULT 0")
         }
 
+        migrator.registerMigration("v10-source-folders") { db in
+            try db.execute(sql: "ALTER TABLE source ADD COLUMN folder TEXT")
+            try db.execute(sql: "CREATE INDEX source_folder ON source(folder)")
+        }
+
         return migrator
     }
 }

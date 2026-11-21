@@ -5,11 +5,38 @@ import SwiftUI
 enum SidebarItem: Hashable {
     case section(SidebarSection)
     case source(Int64)
+    case folder(String)
 }
 
 struct MainView: View {
     @Bindable var model: AppModel
     @AppStorage("sidebar.sourcesExpanded") private var sourcesExpanded = true
+    /// Open folders, one name per line.
+    @AppStorage("sidebar.expandedFolders") private var expandedFolders = ""
+    @State private var renamingFolder: String?
+    @State private var folderName = ""
+
+    private func isExpanded(_ folder: String) -> Binding<Bool> {
+        Binding(
+            get: { expandedFolders.split(separator: "\n").contains(Substring(folder)) },
+            set: { open in
+                var names = Set(expandedFolders.split(separator: "\n").map(String.init))
+                if open { names.insert(folder) } else { names.remove(folder) }
+                expandedFolders = names.sorted().joined(separator: "\n")
+            }
+        )
+    }
+
+    private func sourceRow(_ source: Source) -> some View {
+        Label(source.name, systemImage: source.failCount > 0 ? "exclamationmark.triangle" : "dot.radiowaves.up.forward")
+            .lineLimit(1)
+            .help(source.failCount > 0 ? "Failing: \(source.lastError ?? "unknown error")" : source.url)
+            .tag(SidebarItem.source(source.id))
+    }
+
+    private var enabledSources: [Source] {
+        model.sources.filter(\.enabled).sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
     @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
 
     private var overviewBadge: Text? {
@@ -23,13 +50,22 @@ struct MainView: View {
 
     private var sidebarSelection: Binding<SidebarItem?> {
         Binding(
-            get: { model.section == .source ? model.selectedSourceID.map(SidebarItem.source) : .section(model.section) },
+            get: {
+                switch model.section {
+                case .source: model.selectedSourceID.map(SidebarItem.source)
+                case .folder: model.selectedFolder.map(SidebarItem.folder)
+                default: .section(model.section)
+                }
+            },
             set: { item in
                 switch item {
                 case .section(let section)?: model.section = section
                 case .source(let id)?:
                     model.selectedSourceID = id
                     model.section = .source
+                case .folder(let name)?:
+                    model.selectedFolder = name
+                    model.section = .folder
                 case nil: break
                 }
             }
@@ -45,15 +81,47 @@ struct MainView: View {
                         .tag(SidebarItem.section(section))
                 }
                 Section("Sources", isExpanded: $sourcesExpanded) {
-                    ForEach(model.sources.filter(\.enabled).sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { source in
-                        Label(source.name, systemImage: source.failCount > 0 ? "exclamationmark.triangle" : "dot.radiowaves.up.forward")
-                            .lineLimit(1)
-                            .help(source.failCount > 0 ? "Failing: \(source.lastError ?? "unknown error")" : source.url)
-                            .tag(SidebarItem.source(source.id))
+                    ForEach(model.folders, id: \.self) { folder in
+                        DisclosureGroup(isExpanded: isExpanded(folder)) {
+                            ForEach(enabledSources.filter { $0.folder == folder }) { sourceRow($0) }
+                        } label: {
+                            Label(folder, systemImage: "folder")
+                                .lineLimit(1)
+                                .tag(SidebarItem.folder(folder))
+                                .contextMenu {
+                                    Button("Rename Folder…") {
+                                        folderName = folder
+                                        renamingFolder = folder
+                                    }
+                                    Button("Remove Folder") { Task { await model.removeFolder(folder) } }
+                                        .help("Takes the sources out of this folder. They are kept.")
+                                }
+                        }
                     }
+                    ForEach(enabledSources.filter { $0.folder == nil }) { sourceRow($0) }
                 }
             }
-            .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 260)
+            .navigationSplitViewColumnWidth(min: 190, ideal: 220, max: 300)
+            .safeAreaInset(edge: .bottom, spacing: 0) {
+                HStack {
+                    SettingsLink {
+                        Label("Settings", systemImage: "gearshape")
+                    }
+                    .buttonStyle(.borderless)
+                    .help("Open Settings (Command-Comma)")
+                    Spacer()
+                }
+                .padding(.horizontal, 14)
+                .padding(.vertical, 10)
+            }
+            .alert("Rename Folder", isPresented: Binding(get: { renamingFolder != nil }, set: { if !$0 { renamingFolder = nil } })) {
+                TextField("Folder name", text: $folderName)
+                Button("Rename") {
+                    if let old = renamingFolder { Task { await model.renameFolder(old, to: folderName) } }
+                    renamingFolder = nil
+                }
+                Button("Cancel", role: .cancel) { renamingFolder = nil }
+            }
         } content: {
             Group {
                 if model.section == .radar {

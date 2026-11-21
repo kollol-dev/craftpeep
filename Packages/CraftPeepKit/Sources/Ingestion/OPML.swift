@@ -6,8 +6,11 @@ public struct OPMLFeed: Sendable, Equatable {
     public var title: String?
     public var xmlURL: String
     public var htmlURL: String?
+    /// The outline the feed sits in, if any: its folder in the app it came from.
+    public var folder: String?
 
-    public init(title: String?, xmlURL: String, htmlURL: String?) {
+    public init(title: String?, xmlURL: String, htmlURL: String?, folder: String? = nil) {
+        self.folder = folder
         self.title = title
         self.xmlURL = xmlURL
         self.htmlURL = htmlURL
@@ -23,7 +26,7 @@ public struct OPMLImportPlan: Sendable, Equatable {
 }
 
 /// Reading and writing OPML, the format feed readers use to move subscription lists between apps.
-/// Folders are flattened: CraftPeep has none.
+/// Folders are kept, one level deep: a feed goes in the nearest folder that contains it.
 public enum OPML {
     public static let maximumBytes = 2 * 1024 * 1024
     public static let maximumFeeds = 2000
@@ -62,9 +65,10 @@ public enum OPML {
 
             let name = feed.title.map { HTMLText.truncate(HTMLText.collapseWhitespace($0), to: 80) }.flatMap { $0.isEmpty ? nil : $0 } ?? host
             let site = feed.htmlURL.flatMap { URLCanonicaliser.webURL($0) }.map { "https://" + ($0.host() ?? host) + $0.path() }
+            let folder = feed.folder.map { HTMLText.truncate(HTMLText.collapseWhitespace($0), to: 60) }.flatMap { $0.isEmpty ? nil : $0 }
             plan.definitions.append(SourceDefinition(
                 kind: .rss, name: name, url: url.absoluteString, siteURL: site ?? "https://\(host)",
-                tier: .unverified, topics: [], refreshSeconds: 3600
+                tier: .unverified, topics: [], refreshSeconds: 3600, folder: folder
             ))
         }
         return plan
@@ -86,11 +90,19 @@ public enum OPML {
             "  </head>",
             "  <body>"
         ]
-        for source in sources where source.kind == .rss {
+        func outline(_ source: Source, indent: String) -> String {
             var attributes = #"text="\#(escape(source.name))" title="\#(escape(source.name))" type="rss" xmlUrl="\#(escape(source.url))""#
             if let site = source.siteURL { attributes += #" htmlUrl="\#(escape(site))""# }
-            lines.append("    <outline \(attributes)/>")
+            return "\(indent)<outline \(attributes)/>"
         }
+        let feeds = sources.filter { $0.kind == .rss }
+        let folders = Set(feeds.compactMap(\.folder)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        for folder in folders {
+            lines.append(#"    <outline text="\#(escape(folder))" title="\#(escape(folder))">"#)
+            for source in feeds where source.folder == folder { lines.append(outline(source, indent: "      ")) }
+            lines.append("    </outline>")
+        }
+        for source in feeds where source.folder == nil { lines.append(outline(source, indent: "    ")) }
         lines += ["  </body>", "</opml>", ""]
         return Data(lines.joined(separator: "\n").utf8)
     }
@@ -117,6 +129,8 @@ public enum OPML {
         private(set) var sawRoot = false
         private(set) var reachedLimit = false
         private var depth = 0
+        /// For each open outline, the folder name it opened, or nil if it is a feed or has no name.
+        private var openOutlines: [String?] = []
 
         func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName: String?, attributes: [String: String]) {
             depth += 1
@@ -131,12 +145,18 @@ public enum OPML {
             func attribute(_ key: String) -> String? {
                 attributes.first { $0.key.lowercased() == key.lowercased() }?.value
             }
-            guard let xmlURL = attribute("xmlUrl"), !xmlURL.trimmingCharacters(in: .whitespaces).isEmpty else { return }
             // Some apps write an empty title and put the name in "text".
             let title = [attribute("title"), attribute("text")]
                 .compactMap { $0?.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .first { !$0.isEmpty }
-            feeds.append(OPMLFeed(title: title, xmlURL: xmlURL, htmlURL: attribute("htmlUrl")))
+            guard let xmlURL = attribute("xmlUrl"), !xmlURL.trimmingCharacters(in: .whitespaces).isEmpty else {
+                // An outline without a feed address is a folder.
+                openOutlines.append(title)
+                return
+            }
+            openOutlines.append(nil)
+            let folder = openOutlines.dropLast().compactMap { $0 }.last
+            feeds.append(OPMLFeed(title: title, xmlURL: xmlURL, htmlURL: attribute("htmlUrl"), folder: folder))
             if feeds.count >= OPML.maximumFeeds {
                 reachedLimit = true
                 parser.abortParsing()
@@ -145,6 +165,7 @@ public enum OPML {
 
         func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName: String?) {
             depth -= 1
+            if elementName.lowercased() == "outline", !openOutlines.isEmpty { openOutlines.removeLast() }
         }
     }
 }

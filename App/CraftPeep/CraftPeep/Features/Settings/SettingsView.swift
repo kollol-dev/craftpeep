@@ -87,6 +87,17 @@ private struct SourcesSettings: View {
     @State private var importing = false
     @State private var exporting = false
     @State private var show = SourceListFilter.all
+    @State private var newFolderFor: Source?
+    @State private var newFolderName = ""
+
+    /// The sources shown, grouped by folder, folders first in order, then those in none.
+    private var groups: [(title: String, sources: [Source])] {
+        let folders = Set(shown.compactMap(\.folder)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        var result = folders.map { folder in (title: folder, sources: shown.filter { $0.folder == folder }) }
+        let loose = shown.filter { $0.folder == nil }
+        if !loose.isEmpty { result.append((title: "Not in a folder", sources: loose)) }
+        return result
+    }
 
     enum SourceListFilter: String, CaseIterable, Identifiable {
         case all, failing, quiet
@@ -114,7 +125,7 @@ private struct SourcesSettings: View {
             .pickerStyle(.segmented)
             .labelsHidden()
             .padding(12)
-            List(shown) { source in
+            List { ForEach(groups, id: \.title) { group in Section(group.title) { ForEach(group.sources) { source in
                 HStack(alignment: .firstTextBaseline) {
                     Toggle(isOn: Binding(
                         get: { source.enabled },
@@ -145,6 +156,24 @@ private struct SourcesSettings: View {
                         }
                     }
                     Spacer()
+                    Menu {
+                        Button("Not in a Folder") { Task { await model.setFolder(nil, source: source) } }
+                        if !model.folders.isEmpty { Divider() }
+                        ForEach(model.folders, id: \.self) { folder in
+                            Button(folder) { Task { await model.setFolder(folder, source: source) } }
+                        }
+                        Divider()
+                        Button("New Folder…") {
+                            newFolderName = ""
+                            newFolderFor = source
+                        }
+                    } label: {
+                        Label(source.folder ?? "No folder", systemImage: "folder")
+                            .lineLimit(1)
+                    }
+                    .menuStyle(.borderlessButton)
+                    .fixedSize()
+                    .help("Move this source to a folder")
                     Picker("Trust", selection: Binding(
                         get: { source.tier },
                         set: { tier in Task { await model.setTier(tier, source: source) } }
@@ -175,7 +204,7 @@ private struct SourcesSettings: View {
                         .accessibilityLabel("Remove \(source.name)")
                     }
                 }
-            }
+            } } } }  // source rows, group sections, groups, List
             Divider()
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
@@ -201,6 +230,16 @@ private struct SourcesSettings: View {
             .padding(12)
         }
         .task { await model.loadSourceActivity() }
+        .alert("New Folder", isPresented: Binding(get: { newFolderFor != nil }, set: { if !$0 { newFolderFor = nil } })) {
+            TextField("Folder name", text: $newFolderName)
+            Button("Create") {
+                if let source = newFolderFor { Task { await model.setFolder(newFolderName, source: source) } }
+                newFolderFor = nil
+            }
+            Button("Cancel", role: .cancel) { newFolderFor = nil }
+        } message: {
+            Text("The source moves into the new folder.")
+        }
         .fileImporter(isPresented: $importing, allowedContentTypes: OPMLFile.readableContentTypes) { result in
             guard case .success(let url) = result else { return }
             let accessing = url.startAccessingSecurityScopedResource()

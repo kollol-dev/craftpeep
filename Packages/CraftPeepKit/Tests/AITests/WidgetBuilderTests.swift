@@ -23,12 +23,12 @@ import WidgetSpec
     }
 
     @Test func choosesAWidgetAndTypedSettingsFromTheCatalogue() async throws {
-        let harness = try GatewayHarness([reply("com.craftpeep.news-list", size: "small", settings: [("subject", "AI"), ("showSources", "false")], explanation: "The top three AI stories.")])
+        let harness = try GatewayHarness([reply("com.craftpeep.news-list", size: "small", settings: [("view", "ai"), ("showSources", "false")], explanation: "The top three AI stories.")])
         let result = try await WidgetBuilder(gateway: harness.gateway).propose(request: "three AI headlines, no clutter", catalogue: catalogue)
 
         #expect(result == .proposal(WidgetProposal(
             widgetID: "com.craftpeep.news-list", size: .small,
-            settings: ["subject": .string("ai"), "showSources": .bool(false)],     // "AI" matched the allowed value "ai"
+            settings: ["view": .string("ai"), "showSources": .bool(false)],
             explanation: "The top three AI stories."
         )))
         #expect(await harness.transport.calls.count == 1)
@@ -49,8 +49,9 @@ import WidgetSpec
         #expect(document["request"]?.string == words)
         let entries = try #require(document["catalogue"]?.array)
         #expect(entries.compactMap { $0["id"]?.string } == ["com.craftpeep.news-list", "com.craftpeep.repository-list"])
-        let subject = try #require(entries[0]["settings"]?.array?.first { $0["key"]?.string == "subject" })
-        #expect(subject["allowed_values"]?.array?.compactMap { $0["value"]?.string } == ["all", "ai"])
+        let settings = try #require(entries[0]["settings"]?.array)
+        let view = settings.first(where: { $0["key"]?.string == "view" })
+        #expect(view?["help"]?.string?.contains("folder:Name") == true)       // the model is told which views exist
         #expect(document["current"] == nil)
     }
 
@@ -100,6 +101,7 @@ import WidgetSpec
         let definition = try WidgetSpecLoader.decode(Data("""
             {"spec":"0.2","id":"com.test.w","name":"T","version":"1.0.0",
              "settings":[{"key":"n","type":"number","label":"N","default":5,"min":1,"max":10},
+                         {"key":"pick","type":"select","label":"P","default":"all","options":[{"value":"all","label":"All"},{"value":"ai","label":"AI"}]},
                          {"key":"b","type":"boolean","label":"B","default":true},
                          {"key":"s","type":"string","label":"S","default":""},
                          {"key":"k","type":"secret","label":"K"}],
@@ -114,6 +116,8 @@ import WidgetSpec
         #expect(WidgetBuilder.value("  Swift  ", for: setting("s")) == .string("Swift"))
         #expect(WidgetBuilder.value(String(repeating: "x", count: 500), for: setting("s")) == .string(String(repeating: "x", count: 80)))
         #expect(WidgetBuilder.value("anything", for: setting("k")) == nil)   // secrets are never set by a model
+        #expect(WidgetBuilder.value("AI", for: setting("pick")) == .string("ai"))   // select values match regardless of case
+        #expect(WidgetBuilder.value("sport", for: setting("pick")) == nil)
 
         let json = try #require(JSON.firstObject(in: #"{"widget_id":"com.test.w","size":"medium","settings":[{"key":"k","value":"s3cret"}],"explanation":"x","unmet":null}"#))
         guard case .success(.proposal(let proposal)) = WidgetBuilder.validate(json, catalogue: [definition], current: nil) else {
@@ -126,23 +130,23 @@ import WidgetSpec
 
     @Test func anEditKeepsWhatWasNotAskedToChange() async throws {
         let current = WidgetInstance(
-            id: "i1", widgetID: "com.craftpeep.news-list", settings: ["subject": .string("ai"), "showSources": .bool(false)],
+            id: "i1", widgetID: "com.craftpeep.news-list", settings: ["view": .string("ai"), "showSources": .bool(false)],
             size: "large", createdAt: Date(timeIntervalSince1970: 0)
         )
         let harness = try GatewayHarness([reply("com.craftpeep.news-list", size: "small", settings: [("showSources", "true")])])
         let result = try await WidgetBuilder(gateway: harness.gateway).propose(request: "make it smaller and show the sources", catalogue: catalogue, current: current)
         guard case .proposal(let proposal) = result else { Issue.record("expected a proposal"); return }
         #expect(proposal.size == .small)
-        #expect(proposal.settings == ["subject": .string("ai"), "showSources": .bool(true)])
+        #expect(proposal.settings == ["view": .string("ai"), "showSources": .bool(true)])
 
         let sent = try #require(await harness.transport.calls.first?.body["messages"]?.array?.first?["content"]?.string)
         let document = try #require(JSON.firstObject(in: sent))
         #expect(document["current"]?["widget_id"]?.string == "com.craftpeep.news-list")
-        #expect(document["current"]?["settings"]?["subject"]?.string == "ai")
+        #expect(document["current"]?["settings"]?["view"]?.string == "ai")
     }
 
     @Test func changingToADifferentWidgetStartsFromItsDefaults() throws {
-        let current = WidgetInstance(id: "i1", widgetID: "com.craftpeep.news-list", settings: ["subject": .string("ai")], createdAt: Date(timeIntervalSince1970: 0))
+        let current = WidgetInstance(id: "i1", widgetID: "com.craftpeep.news-list", settings: ["view": .string("ai")], createdAt: Date(timeIntervalSince1970: 0))
         let json = try #require(JSON.firstObject(in: #"{"widget_id":"com.craftpeep.repository-list","size":"medium","settings":[],"explanation":"x","unmet":null}"#))
         guard case .success(.proposal(let proposal)) = WidgetBuilder.validate(json, catalogue: catalogue, current: current) else {
             Issue.record("expected a proposal"); return

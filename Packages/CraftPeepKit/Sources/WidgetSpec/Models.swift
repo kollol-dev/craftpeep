@@ -89,6 +89,8 @@ public struct WidgetDefinition: Codable, Sendable, Equatable {
     public let description: String?
     public let version: String
     public let author: String?
+    /// An SF Symbol name the host shows beside the widget's title.
+    public let symbol: String?
     public let sizes: [WidgetSize]?
     public let platforms: [WidgetPlatform]?
     public let permissions: WidgetPermissions?
@@ -99,7 +101,7 @@ public struct WidgetDefinition: Codable, Sendable, Equatable {
 
     enum CodingKeys: String, CodingKey {
         case schema = "$schema"
-        case spec, id, name, description, version, author
+        case spec, id, name, description, version, author, symbol
         case sizes, platforms, permissions, settings, data, view
     }
 }
@@ -163,8 +165,12 @@ public struct WidgetQueryFilter: Codable, Sendable, Equatable {
     public let saved: Bool?
     /// repositories: only those written mainly in this language. Empty means any.
     public let language: String?
+    /// stories: one of the app's own lists ("overview", "ai", "latest", "saved") or "folder:<name>".
+    /// Decides the filter and the order together, so a setting can switch a widget between them.
+    public let view: String?
 
-    public init(subject: String? = nil, entities: [String]? = nil, kinds: [String]? = nil, sinceHours: Double? = nil, saved: Bool? = nil, language: String? = nil) {
+    public init(subject: String? = nil, entities: [String]? = nil, kinds: [String]? = nil, sinceHours: Double? = nil, saved: Bool? = nil, language: String? = nil, view: String? = nil) {
+        self.view = view
         self.language = language
         self.subject = subject
         self.entities = entities
@@ -264,11 +270,16 @@ public struct WidgetComponent: Codable, Sendable, Equatable {
     public let symbol: String?
     public let url: String?
     public let action: WidgetAction?
+    /// Fixed width and height in points, for badges, bars and tiles.
+    public let width: Double?
+    public let height: Double?
+    /// Type design: "default", "rounded", "serif" or "monospaced".
+    public let design: String?
 
     enum CodingKeys: String, CodingKey {
         case type, children, item, each, limit, when, text, value, format
         case size, weight, color, background, align, spacing, padding, radius
-        case lines, kind, series, min, max, symbol, url, action
+        case lines, kind, series, min, max, symbol, url, action, width, height, design
         case loopVariable = "as"
     }
 }

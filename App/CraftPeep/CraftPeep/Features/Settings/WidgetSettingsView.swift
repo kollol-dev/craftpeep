@@ -1,6 +1,7 @@
 import Domain
 import SwiftUI
 import WidgetBuilder
+import WidgetRuntime
 import WidgetSpec
 
 /// Widgets on the desktop, and the gallery to add more from. Each widget's controls are generated
@@ -84,7 +85,9 @@ struct WidgetSettingsView: View {
                                 set: { if !$0 { previewing = nil } }
                             )) {
                                 DesktopWidgetContent(
-                                    state: model.galleryPreviews[definition.id] ?? .loading, name: definition.name, perform: { _ in }
+                                    state: model.galleryPreviews[definition.id] ?? .loading, name: definition.name,
+                                    header: WidgetHeader(title: definition.name, symbol: definition.symbol ?? "square.grid.2x2.fill"),
+                                    perform: { _ in }
                                 )
                                 .frame(width: WidgetSize.medium.contentSize.width, height: WidgetSize.medium.contentSize.height)
                                 .padding(12)
@@ -131,7 +134,11 @@ private struct SuggestionView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
-            DesktopWidgetContent(state: suggestion.preview, name: suggestion.definition.name, perform: { _ in })
+            DesktopWidgetContent(
+                state: suggestion.preview, name: suggestion.definition.name,
+                header: WidgetHeader(title: suggestion.definition.name, symbol: suggestion.definition.symbol ?? "square.grid.2x2.fill"),
+                perform: { _ in }
+            )
                 .frame(width: suggestion.proposal.size.contentSize.width, height: min(suggestion.proposal.size.contentSize.height, 400))
                 .accessibilityLabel("Preview of the suggested widget")
             HStack {
@@ -166,7 +173,12 @@ private struct WidgetInstanceRow: View {
     private var preview: some View {
         let full = item.size.contentSize
         let scale = 0.42
-        return DesktopWidgetContent(state: item.state, name: item.definition.name, appearance: item.appearance, perform: { _ in })
+        return DesktopWidgetContent(
+            state: item.state, name: item.definition.name, appearance: item.appearance,
+            header: WidgetHeader(title: item.definition.hasViewSetting ? WidgetViews.label(for: item.currentView) : item.definition.name,
+                                 symbol: item.definition.symbol ?? "square.grid.2x2.fill"),
+            perform: { _ in }
+        )
             .frame(width: full.width, height: full.height)
             .scaleEffect(scale, anchor: .topLeading)
             .frame(width: full.width * scale, height: full.height * scale, alignment: .topLeading)

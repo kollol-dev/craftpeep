@@ -19,15 +19,28 @@ public struct GRDBSourceRepository: SourceRepository {
                 let topics = String(decoding: try JSONEncoder().encode(definition.topics), as: UTF8.self)
                 try db.execute(
                     sql: """
-                        INSERT OR IGNORE INTO source (kind, name, url, site_url, tier, topics, refresh_secs)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT OR IGNORE INTO source (kind, name, url, site_url, tier, topics, refresh_secs, folder)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                         """,
                     arguments: [
                         definition.kind.rawValue, definition.name, definition.url, definition.siteURL,
-                        definition.tier.rawValue, topics, definition.refreshSeconds
+                        definition.tier.rawValue, topics, definition.refreshSeconds, definition.folder
                     ]
                 )
                 added += db.changesCount
+            }
+
+            // Sources stored before folders existed get the catalogue's folder once. After that the user's
+            // filing is left alone, even when they take a source out of every folder.
+            let marker = "catalogue.folders.v1"
+            if try String.fetchOne(db, sql: "SELECT value FROM meta WHERE key = ?", arguments: [marker]) == nil {
+                for definition in definitions where definition.folder != nil {
+                    try db.execute(
+                        sql: "UPDATE source SET folder = ? WHERE url = ? AND folder IS NULL AND tier_origin = 'catalog'",
+                        arguments: [definition.folder, definition.url]
+                    )
+                }
+                try db.execute(sql: "INSERT OR REPLACE INTO meta (key, value) VALUES (?, '1')", arguments: [marker])
             }
             return added
         }
@@ -54,6 +67,31 @@ public struct GRDBSourceRepository: SourceRepository {
             }
             return dates
         }
+    }
+
+    public func setFolder(_ folder: String?, sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET folder = ? WHERE id = ?", arguments: [Self.folderName(folder), sourceID])
+        }
+    }
+
+    public func renameFolder(_ name: String, to newName: String) async throws {
+        guard let cleaned = Self.folderName(newName) else { return }
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET folder = ? WHERE folder = ?", arguments: [cleaned, name])
+        }
+    }
+
+    public func removeFolder(_ name: String) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET folder = NULL WHERE folder = ?", arguments: [name])
+        }
+    }
+
+    /// Trimmed and capped; blank means no folder.
+    static func folderName(_ name: String?) -> String? {
+        guard let trimmed = name?.split(whereSeparator: \.isWhitespace).joined(separator: " "), !trimmed.isEmpty else { return nil }
+        return String(trimmed.prefix(60))
     }
 
     public func setTier(_ tier: SourceTier, sourceID: Int64) async throws {
@@ -87,12 +125,12 @@ public struct GRDBSourceRepository: SourceRepository {
             let topics = String(decoding: try JSONEncoder().encode(definition.topics), as: UTF8.self)
             try db.execute(
                 sql: """
-                    INSERT OR IGNORE INTO source (kind, name, url, site_url, tier, tier_origin, topics, refresh_secs)
-                    VALUES (?, ?, ?, ?, ?, 'user', ?, ?)
+                    INSERT OR IGNORE INTO source (kind, name, url, site_url, tier, tier_origin, topics, refresh_secs, folder)
+                    VALUES (?, ?, ?, ?, ?, 'user', ?, ?, ?)
                     """,
                 arguments: [
                     definition.kind.rawValue, definition.name, definition.url, definition.siteURL,
-                    definition.tier.rawValue, topics, definition.refreshSeconds
+                    definition.tier.rawValue, topics, definition.refreshSeconds, Self.folderName(definition.folder)
                 ]
             )
             return db.changesCount == 1
@@ -173,7 +211,8 @@ public struct GRDBSourceRepository: SourceRepository {
             failCount: row["fail_count"],
             lastError: row["last_error"],
             isUserAdded: (row["tier_origin"] as String) == "user",
-            allowsInsecureHTTP: row["allow_http"]
+            allowsInsecureHTTP: row["allow_http"],
+            folder: row["folder"]
         )
     }
 }

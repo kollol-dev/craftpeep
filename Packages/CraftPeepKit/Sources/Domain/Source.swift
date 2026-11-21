@@ -56,6 +56,8 @@ public struct Source: Sendable, Equatable, Identifiable {
     public var isUserAdded: Bool
     /// The user has allowed plain http for this feed, for sites that offer nothing else.
     public var allowsInsecureHTTP: Bool
+    /// The folder the source is filed in, if any. One folder per source, as in most feed readers.
+    public var folder: String?
 
     public init(
         id: Int64,
@@ -73,8 +75,10 @@ public struct Source: Sendable, Equatable, Identifiable {
         failCount: Int = 0,
         lastError: String? = nil,
         isUserAdded: Bool = false,
-        allowsInsecureHTTP: Bool = false
+        allowsInsecureHTTP: Bool = false,
+        folder: String? = nil
     ) {
+        self.folder = folder
         self.isUserAdded = isUserAdded
         self.allowsInsecureHTTP = allowsInsecureHTTP
         self.id = id
@@ -103,6 +107,7 @@ public struct SourceDefinition: Sendable, Equatable, Codable {
     public var tier: SourceTier
     public var topics: [String]
     public var refreshSeconds: Int
+    public var folder: String?
 
     public init(
         kind: SourceKind,
@@ -111,8 +116,10 @@ public struct SourceDefinition: Sendable, Equatable, Codable {
         siteURL: String? = nil,
         tier: SourceTier,
         topics: [String] = [],
-        refreshSeconds: Int = 1800
+        refreshSeconds: Int = 1800,
+        folder: String? = nil
     ) {
+        self.folder = folder
         self.kind = kind
         self.name = name
         self.url = url

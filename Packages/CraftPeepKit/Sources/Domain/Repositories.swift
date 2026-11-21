@@ -57,6 +57,12 @@ public protocol SourceRepository: Sendable {
     func allSources() async throws -> [Source]
     func enabledSources() async throws -> [Source]
     func setEnabled(_ enabled: Bool, sourceID: Int64) async throws
+    /// Files a source in a folder; nil or an empty name takes it out of any folder.
+    func setFolder(_ folder: String?, sourceID: Int64) async throws
+    /// Renames a folder for every source in it.
+    func renameFolder(_ name: String, to newName: String) async throws
+    /// Takes every source out of a folder. The sources themselves are kept.
+    func removeFolder(_ name: String) async throws
     /// How authoritative the user judges the source to be. Affects ranking and verification, never fetching.
     func setTier(_ tier: SourceTier, sourceID: Int64) async throws
     /// Allows or forbids plain http for one source. Allowing it also clears the failure count, so the

@@ -24,6 +24,8 @@ enum SidebarSection: String, CaseIterable, Identifiable {
     case overview, ai, news, radar, saved
     /// One source's stories; which source is `AppModel.selectedSourceID`.
     case source
+    /// One folder's stories; which folder is `AppModel.selectedFolder`.
+    case folder
 
     var id: String { rawValue }
 
@@ -38,6 +40,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .radar: "Developer Radar"
         case .saved: "Saved"
         case .source: "Source"
+        case .folder: "Folder"
         }
     }
 
@@ -49,6 +52,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .radar: "chevron.left.forwardslash.chevron.right"
         case .saved: "bookmark"
         case .source: "dot.radiowaves.up.forward"
+        case .folder: "folder"
         }
     }
 }
@@ -138,10 +142,23 @@ final class AppModel {
         didSet { if selectedSourceID != oldValue, section == .source { selection = nil; scheduleReload() } }
     }
 
-    /// What the story list is titled: the section, or the source's name.
+    /// The folder whose stories are listed when `section` is `.folder`.
+    var selectedFolder: String? {
+        didSet { if selectedFolder != oldValue, section == .folder { selection = nil; scheduleReload() } }
+    }
+
+    /// What the story list is titled: the section, the source's name or the folder's.
     var listTitle: String {
-        guard section == .source else { return section.title }
-        return sources.first { $0.id == selectedSourceID }?.name ?? "Source"
+        switch section {
+        case .source: sources.first { $0.id == selectedSourceID }?.name ?? "Source"
+        case .folder: selectedFolder ?? "Folder"
+        default: section.title
+        }
+    }
+
+    /// Every folder in use, in a stable order.
+    var folders: [String] {
+        Set(sources.compactMap(\.folder)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
     var selection: Int64? {
@@ -320,6 +337,10 @@ final class AppModel {
         case .source:
             // Everything stored from this source, newest first, as in a feed reader.
             filter.sourceID = selectedSourceID ?? -1
+            ranked = false
+            limit = 500
+        case .folder:
+            filter.folder = selectedFolder ?? ""
             ranked = false
             limit = 500
         }
@@ -506,6 +527,47 @@ final class AppModel {
         stories.contains { !$0.summary.isRead }
     }
 
+    // MARK: - Folders
+
+    func setFolder(_ folder: String?, source: Source) async {
+        guard let services else { return }
+        try? await services.sources.setFolder(folder, sourceID: source.id)
+        await foldersChanged()
+    }
+
+    func renameFolder(_ name: String, to newName: String) async {
+        guard let services else { return }
+        let cleaned = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty, cleaned != name else { return }
+        try? await services.sources.renameFolder(name, to: cleaned)
+        if selectedFolder == name { selectedFolder = cleaned }
+        // Widgets showing the folder follow the new name.
+        for item in widgets where item.instance.settings["view"] == .string(WidgetViews.folder(name)) {
+            var instance = item.instance
+            instance.settings["view"] = .string(WidgetViews.folder(cleaned))
+            try? await services.widgetInstances.save(instance)
+        }
+        await foldersChanged()
+    }
+
+    func removeFolder(_ name: String) async {
+        guard let services else { return }
+        try? await services.sources.removeFolder(name)
+        if section == .folder, selectedFolder == name { section = .overview }
+        await foldersChanged()
+    }
+
+    private func foldersChanged() async {
+        guard let services else { return }
+        sources = (try? await services.sources.allSources()) ?? sources
+        await reload()
+    }
+
+    /// What a story widget's header can switch to: the app's own lists, then every folder.
+    var widgetViewOptions: [(id: String, label: String)] {
+        WidgetViews.fixed + folders.map { (WidgetViews.folder($0), $0) }
+    }
+
     // MARK: - Source activity
 
     /// When each source last published a story CraftPeep has stored. Read for the Sources settings.
@@ -541,7 +603,15 @@ final class AppModel {
         var added = 0
         var present = 0
         for definition in plan.definitions {
-            if (try? await services.sources.addUserSource(definition)) == true { added += 1 } else { present += 1 }
+            if (try? await services.sources.addUserSource(definition)) == true {
+                added += 1
+            } else {
+                present += 1
+                // A feed you already had takes the file's folder if it was not in one.
+                if let folder = definition.folder, let existing = sources.first(where: { $0.url == definition.url }), existing.folder == nil {
+                    try? await services.sources.setFolder(folder, sourceID: existing.id)
+                }
+            }
         }
         sources = (try? await services.sources.allSources()) ?? sources
         // New sources are due at once; fetch them without making the caller wait.
@@ -702,7 +772,7 @@ final class AppModel {
                 let fetched = await services.github.lastSuccess()
                 asOf = fetched
             }
-            return (.ready(root, asOf: asOf), links)
+            return (.ready(root, asOf: asOf, unread: Self.unreadCount(in: snapshot)), links)
         }
         return (.failed("The widget has nothing to draw."), links)
     }
@@ -713,7 +783,13 @@ final class AppModel {
         if gallery.isEmpty { gallery = (try? BundledWidgets.all()) ?? [] }
         await migrateLegacyWidgetPreference()
 
-        let instances = (try? await services.widgetInstances.allInstances()) ?? []
+        var instances = (try? await services.widgetInstances.allInstances()) ?? []
+        // News widgets made before views existed had a "subject" setting; carry it over once.
+        for index in instances.indices where instances[index].settings["view"] == nil && instances[index].settings["subject"] != nil {
+            instances[index].settings["view"] = .string(instances[index].settings["subject"] == .string("ai") ? "ai" : "overview")
+            instances[index].settings["subject"] = nil
+            try? await services.widgetInstances.save(instances[index])
+        }
         var items: [DesktopWidgetItem] = []
         var links: [String: Int64] = [:]
         for instance in instances {
@@ -737,6 +813,11 @@ final class AppModel {
             previews[definition.id] = await resolve(definition, settings: [:], size: .medium).0
         }
         galleryPreviews = previews
+    }
+
+    /// One widget drawn with chosen settings and size, without putting it on the desktop.
+    func preview(_ definition: WidgetDefinition, size: WidgetSize, settings: [String: WidgetSettingValue] = [:]) async -> DesktopWidgetState {
+        await resolve(definition, settings: settings, size: size).0
     }
 
     func addWidget(_ definition: WidgetDefinition) async {
@@ -865,6 +946,16 @@ final class AppModel {
     func discardWidgetSuggestion() {
         widgetSuggestion = nil
         widgetBuilderMessage = nil
+    }
+
+    /// Unread stories in a widget's data, for the badge in its header.
+    private static func unreadCount(in snapshot: WidgetSnapshot) -> Int {
+        guard case .object(let data)? = snapshot.variables["data"] else { return 0 }
+        var count = 0
+        for case .array(let rows) in data.values {
+            for case .object(let row) in rows where row["headline"] != nil && row["isRead"] == .bool(false) { count += 1 }
+        }
+        return count
     }
 
     func perform(_ action: RenderAction) {

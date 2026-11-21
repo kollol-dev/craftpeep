@@ -24,6 +24,7 @@ Files in this folder:
 | Key | Purpose |
 |---|---|
 | `spec`, `id`, `name`, `version` | Identity. `id` is reverse-DNS, `version` is semver. |
+| `symbol` | Optional SF Symbol name (lowercase letters, digits and dots) for the header icon tile. The host draws the header (icon, title or view menu, unread count) and the footer (updated time, refresh, settings); the widget file draws only the content. |
 | `sizes`, `platforms` | Which sizes and platforms the widget supports. |
 | `permissions` | `network` hosts, `system` sources, `ai`. A widget that only uses `query` sources needs none. |
 | `settings` | Drives the auto-generated settings form. Types: string, number, boolean, select, color, stringList, secret. |
@@ -34,7 +35,7 @@ Files in this folder:
 
 | Type | What it does | Notes |
 |---|---|---|
-| `query` | Read from CraftPeep's local store | Spec 0.2. `from: "repositories"` takes `where.language` and exposes `fullName`, `owner`, `name`, `description`, `url`, `language`, `stars`, `starsPerDay`, `growth`, `isMeasured`. `from: "stories"`, optional `where` (`subject`, `entities`, `kinds`, `sinceHours`, `saved`), `sort` (`rank` or `latest`), `limit` up to 50. Needs no permission and makes no network request. Each story exposes `headline`, `excerpt`, `url`, `discussionURL`, `source`, `sources`, `sourceCount`, `kind`, `support`, `publishedAt`, `points`, `comments`, `isRead`, `isSaved`. |
+| `query` | Read from CraftPeep's local store | Spec 0.2. `from: "repositories"` takes `where.language` and exposes `fullName`, `owner`, `name`, `description`, `url`, `language`, `stars`, `starsPerDay`, `growth`, `isMeasured`. `from: "stories"`, optional `where` (`view`, `subject`, `entities`, `kinds`, `sinceHours`, `saved`). `view` is `overview` (ranked), `ai` (ranked, AI subject), `latest` (newest, 14 days), `saved`, or `folder:Name` (newest from that folder's sources, 14 days); a widget whose settings include `view` gets the header menu for switching it, `sort` (`rank` or `latest`), `limit` up to 50. Needs no permission and makes no network request. Each story exposes `headline`, `excerpt`, `url`, `discussionURL`, `source`, `sources`, `sourceCount`, `kind`, `kindSymbol`, `support`, `publishedAt`, `points`, `comments`, `isRead`, `isSaved`, and `monogram` and `sourceColor` (a stable colour per source) for a source tile. Repositories also expose `monogram` and `sourceColor`. |
 | `static` | Literal value | For lookup tables and constants. |
 | `time` | Current date and time | Exposes `.date`. |
 | `http` | GET a JSON endpoint | Host must be in `permissions.network`. `path` picks a sub-object, `map` reshapes, `each` fans out one request per array element. |
@@ -48,7 +49,9 @@ All sources accept `refresh`. The runtime only refreshes sources for widgets tha
 
 Layout: `vstack`, `hstack`, `zstack`, `spacer`, `divider`.
 Content: `text`, `number`, `image`, `icon`, `badge`, `progress` (ring or bar), `chart` (line, area, sparkline, columns).
-Structure: `list` (repeat a template over an array), `button`.
+Structure: `list` (repeat a template over an array; the template sees `index`, starting at 0), `button`.
+
+Any component can take `width` and `height` in points (0 to 600). Text takes `design`: `default`, `rounded`, `serif` or `monospaced`.
 
 Any component can take `when` (conditional render) and `action` (`openURL`, `copy`, `refresh`).
 

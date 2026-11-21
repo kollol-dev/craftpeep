@@ -32,6 +32,7 @@ private struct NodeView: View {
     @ViewBuilder
     private var styled: some View {
         let view = content
+            .frame(width: node.width.map { CGFloat($0) }, height: node.height.map { CGFloat($0) })
             .padding(CGFloat(node.padding ?? 0))
             .background(node.background.map { $0.style(accent: accent) } ?? AnyShapeStyle(.clear),
                         in: RoundedRectangle(cornerRadius: CGFloat(node.radius ?? 0)))
@@ -71,10 +72,12 @@ private struct NodeView: View {
                 .accessibilityHidden(true)
         case .badge:
             Text(node.text ?? "")
-                .font(.caption.weight(.medium))
+                .font(.system(.caption2, design: .rounded, weight: .semibold))
+                .foregroundStyle(node.color?.style(accent: accent) ?? AnyShapeStyle(.secondary))
                 .padding(.horizontal, 6)
                 .padding(.vertical, 2)
-                .background(.quaternary, in: Capsule())
+                .background(node.background.map { $0.style(accent: accent) } ?? AnyShapeStyle(.quaternary), in: Capsule())
+                .lineLimit(1)
         case .button:
             Button(node.text ?? "") {
                 if let action = node.action { onAction(action) }
@@ -90,7 +93,7 @@ private struct NodeView: View {
     }
 
     private var font: Font {
-        let base: Font = switch node.size {
+        let style: Font.TextStyle = switch node.size {
         case .caption: .caption
         case .title: .title3
         case .display: .largeTitle
@@ -102,7 +105,13 @@ private struct NodeView: View {
         case .bold: .bold
         case .regular, nil: .regular
         }
-        return base.weight(weight)
+        let design: Font.Design = switch node.design {
+        case "rounded": .rounded
+        case "serif": .serif
+        case "monospaced": .monospaced
+        default: .default
+        }
+        return .system(style, design: design, weight: weight)
     }
 
     private var horizontal: HorizontalAlignment {

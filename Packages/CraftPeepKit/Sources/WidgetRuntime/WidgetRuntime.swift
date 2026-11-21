@@ -53,6 +53,21 @@ public enum BundledWidgets {
     }
 }
 
+/// The lists a story widget can show, for the host's view switcher.
+public enum WidgetViews {
+    public static let fixed: [(id: String, label: String)] = [
+        ("overview", "Overview"), ("ai", "AI"), ("latest", "Latest"), ("saved", "Saved")
+    ]
+
+    public static func folder(_ name: String) -> String { "folder:" + name }
+
+    public static func label(for id: String) -> String {
+        if let fixed = fixed.first(where: { $0.id == id }) { return fixed.label }
+        if id.hasPrefix("folder:") { return String(id.dropFirst(7)) }
+        return "Overview"
+    }
+}
+
 /// Resolves a widget's data sources. The only thing a widget can reach is the local store, through `source`.
 public enum WidgetRuntime {
     public static let defaultQueryLimit = 10
@@ -137,9 +152,9 @@ public enum WidgetRuntime {
             case .query:
                 queried = true
                 do {
-                    let filter = try filter(for: dataSource, scope: scope, context: context, subjects: subjects, now: now)
+                    let (filter, ranked) = try filter(for: dataSource, scope: scope, context: context, subjects: subjects, now: now)
                     let limit = min(max(dataSource.limit ?? defaultQueryLimit, 1), 50)
-                    let stories = try await source.stories(filter, ranked: dataSource.sort != "latest", limit: limit)
+                    let stories = try await source.stories(filter, ranked: ranked, limit: limit)
                     foundStories = foundStories || !stories.isEmpty
                     data[name] = .array(stories.prefix(limit).map(value))
                 } catch {
@@ -171,7 +186,7 @@ public enum WidgetRuntime {
         context: ExprContext,
         subjects: [String: StoryFilter.Subject],
         now: Date
-    ) throws -> StoryFilter {
+    ) throws -> (StoryFilter, ranked: Bool) {
         func text(_ template: String) throws -> String {
             do {
                 return try Template.parse(template).render(in: scope, context: context)
@@ -182,6 +197,33 @@ public enum WidgetRuntime {
 
         let conditions = dataSource.filter
         var filter = StoryFilter(since: now.addingTimeInterval(-(conditions?.sinceHours ?? 72) * 3600))
+        var ranked = dataSource.sort != "latest"
+
+        // A view names one of the app's own lists and sets the order with the filter.
+        if let viewTemplate = conditions?.view {
+            let view = try text(viewTemplate).trimmingCharacters(in: .whitespaces)
+            switch view {
+            case "overview", "":
+                ranked = true
+            case "ai":
+                guard let known = subjects["ai"] else { throw QueryError(message: "unknown subject 'ai'") }
+                filter.subject = known
+                ranked = true
+            case "latest":
+                filter.since = now.addingTimeInterval(-14 * 86_400)
+                ranked = false
+            case "saved":
+                filter.since = .distantPast
+                filter.keptOnly = true
+                ranked = false
+            case let folder where folder.hasPrefix("folder:") && folder.count > 7:
+                filter.folder = String(folder.dropFirst(7))
+                filter.since = now.addingTimeInterval(-14 * 86_400)
+                ranked = false
+            default:
+                throw QueryError(message: "unknown view '\(view)'")
+            }
+        }
 
         if let subjectTemplate = conditions?.subject {
             let subject = try text(subjectTemplate)
@@ -198,8 +240,8 @@ public enum WidgetRuntime {
         if let kinds = conditions?.kinds, !kinds.isEmpty {
             filter.kinds = Set(kinds.compactMap(StoryKind.init(rawValue:)))
         }
-        filter.keptOnly = conditions?.saved == true
-        return filter
+        if conditions?.saved == true { filter.keptOnly = true }
+        return (filter, ranked)
     }
 
     /// What a widget's expressions can read about a story. Plain values only.
@@ -207,6 +249,9 @@ public enum WidgetRuntime {
         .object([
             "id": .number(Double(story.id)),
             "headline": .string(story.headline),
+            "monogram": .string(monogram(story.sourceNames.first ?? "")),
+            "sourceColor": .string(color(for: story.sourceNames.first ?? "")),
+            "kindSymbol": story.kind.map { .string(kindSymbol($0)) } ?? .null,
             "excerpt": story.excerpt.map(ExprValue.string) ?? .null,
             "url": .string(story.url),
             "discussionURL": story.discussionURL.map(ExprValue.string) ?? .null,
@@ -230,6 +275,8 @@ public enum WidgetRuntime {
         return .object([
             "id": .number(Double(repository.id)),
             "fullName": .string(repository.fullName),
+            "monogram": .string(monogram(parts.first ?? repository.fullName)),
+            "sourceColor": .string(color(for: parts.first ?? repository.fullName)),
             "owner": .string(parts.first ?? ""),
             "name": .string(parts.last ?? repository.fullName),
             "description": repository.description.map(ExprValue.string) ?? .null,
@@ -253,6 +300,33 @@ public enum WidgetRuntime {
             return "+\(compact(gained)) stars in \(period)"
         case .sinceCreation(let days):
             return "\(compact(item.repository.stars)) stars in \(Int(max(days, 1).rounded()))d, est."
+        }
+    }
+
+    /// The first letter of a name, for a small coloured badge.
+    static func monogram(_ name: String) -> String {
+        name.first(where: { $0.isLetter || $0.isNumber }).map { String($0).uppercased() } ?? "•"
+    }
+
+    /// A colour for a source, the same every time for the same name. All readable with white text.
+    static let palette = ["#E5484D", "#F76B15", "#3E63DD", "#0090FF", "#12A594", "#30A46C", "#8E4EC6", "#D6409F", "#5B5BD6", "#978365"]
+
+    static func color(for name: String) -> String {
+        var hash: UInt64 = 5381
+        for scalar in name.lowercased().unicodeScalars { hash = (hash &* 33) &+ UInt64(scalar.value) }
+        return palette[Int(hash % UInt64(palette.count))]
+    }
+
+    static func kindSymbol(_ kind: StoryKind) -> String {
+        switch kind {
+        case .shipping: "shippingbox.fill"
+        case .announcement: "megaphone.fill"
+        case .research: "text.book.closed.fill"
+        case .benchmark: "chart.bar.fill"
+        case .funding: "banknote.fill"
+        case .partnership: "person.2.fill"
+        case .speculation: "questionmark.bubble.fill"
+        case .unverifiedClaim: "exclamationmark.bubble.fill"
         }
     }
 

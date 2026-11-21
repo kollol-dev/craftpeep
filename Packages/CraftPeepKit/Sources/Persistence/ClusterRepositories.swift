@@ -142,6 +142,10 @@ public struct GRDBClusterRepository: ClusterRepository {
                 WHERE c.last_seen_at >= ?
                 """
             var arguments: StatementArguments = [filter.since.unixSeconds]
+            if let folder = filter.folder {
+                sql += " AND EXISTS (SELECT 1 FROM article a JOIN source s ON s.id = a.source_id WHERE a.cluster_id = c.id AND s.folder = ?)"
+                arguments += [folder]
+            }
             if let sourceID = filter.sourceID {
                 sql += " AND EXISTS (SELECT 1 FROM article a WHERE a.cluster_id = c.id AND a.source_id = ?)"
                 arguments += [sourceID]
