@@ -248,6 +248,16 @@ public final class AppDatabase: Sendable {
             try db.execute(sql: "CREATE INDEX source_folder ON source(folder)")
         }
 
+        migrator.registerMigration("v11-trending-alerts") { db in
+            try db.execute(sql: """
+                ALTER TABLE source ADD COLUMN alert INTEGER NOT NULL DEFAULT 0;
+                CREATE TABLE alert_log (
+                  cluster_id INTEGER PRIMARY KEY REFERENCES cluster(id) ON DELETE CASCADE,
+                  sent_at    INTEGER NOT NULL
+                );
+                """)
+        }
+
         return migrator
     }
 }

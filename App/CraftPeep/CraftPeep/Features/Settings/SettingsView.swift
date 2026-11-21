@@ -1,3 +1,4 @@
+import Updater
 import Domain
 import Ingestion
 import ServiceManagement
@@ -6,15 +7,19 @@ import UniformTypeIdentifiers
 
 struct SettingsView: View {
     let model: AppModel
+    /// Nil in snapshot mode, which has no updater.
+    var updater: AppUpdater?
 
     var body: some View {
         TabView {
-            GeneralSettings()
+            GeneralSettings(updater: updater)
                 .tabItem { Label("General", systemImage: "gearshape") }
             SourcesSettings(model: model)
                 .tabItem { Label("Sources", systemImage: "dot.radiowaves.up.forward") }
             InterestsSettings(model: model)
                 .tabItem { Label("Interests", systemImage: "heart.text.square") }
+            AlertSettingsView(model: model)
+                .tabItem { Label("Alerts", systemImage: "bell.badge") }
             AISettingsView(model: model)
                 .tabItem { Label("AI", systemImage: "sparkles") }
             WidgetSettingsView(model: model)
@@ -25,6 +30,7 @@ struct SettingsView: View {
 }
 
 private struct GeneralSettings: View {
+    let updater: AppUpdater?
     @AppStorage("density") private var density = Density.balanced
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
     @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
@@ -54,6 +60,18 @@ private struct GeneralSettings: View {
             if let loginError {
                 Text(loginError).font(.caption).foregroundStyle(.secondary)
             }
+            if let updater, updater.isConfigured {
+                Section("Updates") {
+                    Toggle("Check for updates every day", isOn: Bindable(updater).automaticallyChecksForUpdates)
+                    LabeledContent("Version \(updater.currentVersion)") {
+                        Button("Check Now") { updater.checkForUpdates() }
+                            .disabled(!updater.canCheckForUpdates)
+                    }
+                    Text("Updates come from CraftPeep's GitHub releases and are installed only if they carry the publisher's signature. The check sends no information about you or this Mac.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
             Section("Keyboard, while the story list is selected") {
                 Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 4) {
                     ForEach([
@@ -69,7 +87,7 @@ private struct GeneralSettings: View {
                 }
             }
             Section("Privacy") {
-                Text("CraftPeep has no account and sends no usage data. It connects only to the sources you have switched on, without cookies. Stories older than 90 days are removed unless you saved them.")
+                Text("CraftPeep has no account and sends no usage data. It connects only to the sources you have switched on, without cookies, and to GitHub to check for updates. Stories older than 90 days are removed unless you saved them.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

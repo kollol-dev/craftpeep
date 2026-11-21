@@ -58,6 +58,8 @@ public struct Source: Sendable, Equatable, Identifiable {
     public var allowsInsecureHTTP: Bool
     /// The folder the source is filed in, if any. One folder per source, as in most feed readers.
     public var folder: String?
+    /// Stories from this source can trigger the daily trending alert.
+    public var alertsEnabled: Bool
 
     public init(
         id: Int64,
@@ -76,9 +78,11 @@ public struct Source: Sendable, Equatable, Identifiable {
         lastError: String? = nil,
         isUserAdded: Bool = false,
         allowsInsecureHTTP: Bool = false,
-        folder: String? = nil
+        folder: String? = nil,
+        alertsEnabled: Bool = false
     ) {
         self.folder = folder
+        self.alertsEnabled = alertsEnabled
         self.isUserAdded = isUserAdded
         self.allowsInsecureHTTP = allowsInsecureHTTP
         self.id = id

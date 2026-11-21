@@ -88,6 +88,18 @@ public struct GRDBSourceRepository: SourceRepository {
         }
     }
 
+    public func setAlertsEnabled(_ enabled: Bool, sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET alert = ? WHERE id = ?", arguments: [enabled, sourceID])
+        }
+    }
+
+    public func setAlertsEnabled(_ enabled: Bool, folder: String) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET alert = ? WHERE folder = ?", arguments: [enabled, folder])
+        }
+    }
+
     /// Trimmed and capped; blank means no folder.
     static func folderName(_ name: String?) -> String? {
         guard let trimmed = name?.split(whereSeparator: \.isWhitespace).joined(separator: " "), !trimmed.isEmpty else { return nil }
@@ -212,7 +224,8 @@ public struct GRDBSourceRepository: SourceRepository {
             lastError: row["last_error"],
             isUserAdded: (row["tier_origin"] as String) == "user",
             allowsInsecureHTTP: row["allow_http"],
-            folder: row["folder"]
+            folder: row["folder"],
+            alertsEnabled: row["alert"]
         )
     }
 }

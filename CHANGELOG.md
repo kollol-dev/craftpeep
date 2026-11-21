@@ -2,7 +2,20 @@
 
 Significant changes, newest first. Nothing has been released yet.
 
+## 0.1.1
+First pre-alpha release with MVP features
+
 ## Unreleased
+
+### Added
+
+- Updates through Sparkle 2: Check for Updates… in the app menu and a daily check, from the latest GitHub release's appcast. Updates must carry the publisher's EdDSA signature. `scripts/release.sh` builds the DMG, release notes and signed appcast.
+- A daily trending alert (Settings → Alerts): at a chosen time (10:00 by default), one notification with up to three stories from chosen sources covered by 3 or more publications (5 for Very strong) or 300+ Hacker News points. Rules only, no repeats. Schema v11.
+
+### Changed
+
+- Bundle identifier is now `dev.kollol.CraftPeep`; the version starts at 0.1.0.
+
 
 ### Added
 

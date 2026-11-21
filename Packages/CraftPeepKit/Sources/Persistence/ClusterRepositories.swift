@@ -124,6 +124,7 @@ public struct GRDBClusterRepository: ClusterRepository {
         let wantsSearch = !(filter.query ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         if wantsSearch && pattern == nil { return [] }
         if let kinds = filter.kinds, kinds.isEmpty { return [] }
+        if let sourceIDs = filter.sourceIDs, sourceIDs.isEmpty { return [] }
 
         return try await database.writer.read { db in
             var sql = """
@@ -145,6 +146,11 @@ public struct GRDBClusterRepository: ClusterRepository {
             if let folder = filter.folder {
                 sql += " AND EXISTS (SELECT 1 FROM article a JOIN source s ON s.id = a.source_id WHERE a.cluster_id = c.id AND s.folder = ?)"
                 arguments += [folder]
+            }
+            if let sourceIDs = filter.sourceIDs {
+                let marks = Array(repeating: "?", count: sourceIDs.count).joined(separator: ", ")
+                sql += " AND EXISTS (SELECT 1 FROM article a WHERE a.cluster_id = c.id AND a.source_id IN (\(marks)))"
+                for id in sourceIDs.sorted() { arguments += [id] }
             }
             if let sourceID = filter.sourceID {
                 sql += " AND EXISTS (SELECT 1 FROM article a WHERE a.cluster_id = c.id AND a.source_id = ?)"
@@ -371,5 +377,30 @@ private func databaseQuestionMarks(count: Int) -> String {
 private extension Array {
     func chunked(into size: Int) -> [[Element]] {
         stride(from: 0, to: count, by: size).map { Array(self[$0..<Swift.min($0 + size, count)]) }
+    }
+}
+
+public struct GRDBAlertRepository: AlertRepository {
+    let database: AppDatabase
+
+    public init(database: AppDatabase) {
+        self.database = database
+    }
+
+    public func sentClusterIDs(since date: Date) async throws -> Set<Int64> {
+        try await database.writer.read { db in
+            Set(try Int64.fetchAll(db, sql: "SELECT cluster_id FROM alert_log WHERE sent_at >= ?", arguments: [date.unixSeconds]))
+        }
+    }
+
+    public func recordSent(_ clusterIDs: [Int64], at date: Date) async throws {
+        try await database.writer.write { db in
+            for id in clusterIDs {
+                try db.execute(
+                    sql: "INSERT OR REPLACE INTO alert_log (cluster_id, sent_at) VALUES (?, ?)",
+                    arguments: [id, date.unixSeconds]
+                )
+            }
+        }
     }
 }

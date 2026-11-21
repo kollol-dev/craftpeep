@@ -63,6 +63,10 @@ public protocol SourceRepository: Sendable {
     func renameFolder(_ name: String, to newName: String) async throws
     /// Takes every source out of a folder. The sources themselves are kept.
     func removeFolder(_ name: String) async throws
+    /// Chooses whether a source's stories can trigger the daily trending alert.
+    func setAlertsEnabled(_ enabled: Bool, sourceID: Int64) async throws
+    /// The same, for every source in a folder.
+    func setAlertsEnabled(_ enabled: Bool, folder: String) async throws
     /// How authoritative the user judges the source to be. Affects ranking and verification, never fetching.
     func setTier(_ tier: SourceTier, sourceID: Int64) async throws
     /// Allows or forbids plain http for one source. Allowing it also clears the failure count, so the
@@ -86,4 +90,10 @@ public protocol ArticleRepository: Sendable {
     /// Newest first. `matching` is a full-text query over title and excerpt; nil or blank means all.
     func latestStories(limit: Int, matching query: String?) async throws -> [Story]
     func articleCount() async throws -> Int
+}
+
+/// Which stories the daily trending alert has already mentioned, so none is repeated.
+public protocol AlertRepository: Sendable {
+    func sentClusterIDs(since date: Date) async throws -> Set<Int64>
+    func recordSent(_ clusterIDs: [Int64], at date: Date) async throws
 }

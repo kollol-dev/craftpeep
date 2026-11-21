@@ -12,6 +12,21 @@
 		<key>NSAllowsArbitraryLoads</key>
 		<true/>
 	</dict>
+	<!-- Sparkle updates. The feed is the latest GitHub release's appcast.xml; moving updates to a website
+	     later means changing SUFeedURL only. Every update must carry an EdDSA signature matching
+	     SUPublicEDKey; the private key is in the publisher's Keychain. No system profile is sent. -->
+	<key>SUFeedURL</key>
+	<string>https://github.com/kollol-dev/craftpeep/releases/latest/download/appcast.xml</string>
+	<key>SUPublicEDKey</key>
+	<string>2LjuPtpdPop/F8sax2M8RE5bWXKIWQaQsfWAVrfmQMI=</string>
+	<key>SUEnableInstallerLauncherService</key>
+	<true/>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUScheduledCheckInterval</key>
+	<integer>86400</integer>
+	<key>SUEnableSystemProfiling</key>
+	<false/>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>
