@@ -476,8 +476,54 @@ final class AppModel {
         await refreshWidgets()
     }
 
+    // MARK: - Moving through the list from the keyboard
+
+    func selectNext() {
+        guard !stories.isEmpty else { return }
+        guard let index = stories.firstIndex(where: { $0.id == selection }) else { selection = stories.first?.id; return }
+        selection = stories[min(index + 1, stories.count - 1)].id
+    }
+
+    func selectPrevious() {
+        guard !stories.isEmpty else { return }
+        guard let index = stories.firstIndex(where: { $0.id == selection }) else { selection = stories.first?.id; return }
+        selection = stories[max(index - 1, 0)].id
+    }
+
+    /// The next unread story below the current one, or the first unread one from the top.
+    func selectNextUnread() {
+        let start = stories.firstIndex(where: { $0.id == selection }).map { $0 + 1 } ?? 0
+        let next = stories[min(start, stories.count)...].first { !$0.summary.isRead } ?? stories.first { !$0.summary.isRead && $0.id != selection }
+        if let next { selection = next.id }
+    }
+
+    func toggleReadSelected() async {
+        guard let item = selectedItem else { return }
+        if item.summary.isRead { await markSelectedUnread() } else { await markRead(item.id) }
+    }
+
     var hasUnreadInList: Bool {
         stories.contains { !$0.summary.isRead }
+    }
+
+    // MARK: - Source activity
+
+    /// When each source last published a story CraftPeep has stored. Read for the Sources settings.
+    private(set) var newestStory: [Int64: Date] = [:]
+
+    func loadSourceActivity() async {
+        guard let services else { return }
+        newestStory = (try? await services.sources.newestStoryDates()) ?? [:]
+        sources = (try? await services.sources.allSources()) ?? sources
+    }
+
+    /// Enabled, fetching without errors, but nothing new for a month: candidates for switching off.
+    static let quietAfter: TimeInterval = 30 * 86_400
+
+    func isQuiet(_ source: Source) -> Bool {
+        guard source.enabled, source.failCount == 0, source.lastOKAt != nil else { return false }
+        guard let newest = newestStory[source.id] else { return true }
+        return newest.timeIntervalSinceNow < -Self.quietAfter
     }
 
     // MARK: - OPML

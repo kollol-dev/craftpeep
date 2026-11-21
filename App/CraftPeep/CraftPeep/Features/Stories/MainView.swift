@@ -10,6 +10,16 @@ enum SidebarItem: Hashable {
 struct MainView: View {
     @Bindable var model: AppModel
     @AppStorage("sidebar.sourcesExpanded") private var sourcesExpanded = true
+    @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
+
+    private var overviewBadge: Text? {
+        guard model.unreadTopCount > 0 else { return nil }
+        switch badgeStyle {
+        case .number: return Text("\(model.unreadTopCount)")
+        case .dot: return Text("•")
+        case .hidden: return nil
+        }
+    }
 
     private var sidebarSelection: Binding<SidebarItem?> {
         Binding(
@@ -31,7 +41,7 @@ struct MainView: View {
             List(selection: sidebarSelection) {
                 ForEach(SidebarSection.main) { section in
                     Label(section.title, systemImage: section.symbol)
-                        .badge(section == .overview ? model.unreadTopCount : 0)
+                        .badge(section == .overview ? overviewBadge : nil)
                         .tag(SidebarItem.section(section))
                 }
                 Section("Sources", isExpanded: $sourcesExpanded) {
@@ -167,6 +177,26 @@ struct StoryListView: View {
                 }
             }
             .listStyle(.inset)
+            .onKeyPress(characters: CharacterSet(charactersIn: "jkmnsfor "), phases: .down) { press in
+                // Single keys act only while the list has focus, so typing in the search field is unaffected.
+                guard press.modifiers.subtracting(.shift).isEmpty else { return .ignored }
+                switch press.characters.lowercased() {
+                case "j": model.selectNext()
+                case "k": model.selectPrevious()
+                case "n", " ": model.selectNextUnread()
+                case "m": Task { await model.toggleReadSelected() }
+                case "s": Task { await model.toggleSaved() }
+                case "f": Task { await model.toggleFavourite() }
+                case "o": model.openSelected()
+                case "r": Task { await model.refresh() }
+                default: return .ignored
+                }
+                return .handled
+            }
+            .onKeyPress(.return) {
+                model.openSelected()
+                return .handled
+            }
         }
     }
 

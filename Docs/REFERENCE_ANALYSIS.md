@@ -169,9 +169,9 @@ Researched 21 November 2026 from netnewswire.com (home page, FAQ, privacy policy
 | Folders, per-feed view | Yes | Per-source view added after this comparison; no folders |
 | Mark all read, hide read | Yes | Mark All as Read added; no hiding of read stories |
 | OPML import and export | Yes | Added after this comparison |
-| Keyboard | Single-key shortcuts | Command-key shortcuts only; the single-key set in the requirements was not built |
+| Keyboard | Single-key shortcuts | Single-key shortcuts added after this comparison |
 | Sync and iPhone | Yes, nine options | No (Phase 2 and 3) |
-| Stale and failing feeds | Dinosaurs window, error and activity logs | Failing sources only |
+| Stale and failing feeds | Dinosaurs window, error and activity logs | Failing and quiet-for-30-days filters added; no activity log |
 | Maturity | 24 years, thousands of users, 90 contributors | Unreleased, one user, untested interactions |
 
 ### What this means
@@ -184,7 +184,7 @@ Researched 21 November 2026 from netnewswire.com (home page, FAQ, privacy policy
 
 ### Worth borrowing, in order
 
-Built on 21 November 2026: items 1 to 3. Items 4 to 6 remain open.
+Built on 21 November 2026: all six.
 
 1. **OPML import and export.** The way users move feed lists between apps; small to build; the OPML parser can reuse the feed parser's limits.
 2. **JSON Feed.** Some independent blogs publish only JSON Feed. A second small parser.

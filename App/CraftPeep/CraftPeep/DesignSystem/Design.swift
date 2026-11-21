@@ -27,6 +27,23 @@ enum Density: String, CaseIterable, Identifiable {
     var rowPadding: CGFloat { self == .compact ? 2 : 4 }
 }
 
+/// How unread counts are shown. NetNewsWire added the same choice to take away the pressure to catch up.
+enum UnreadBadgeStyle: String, CaseIterable, Identifiable {
+    case number, dot, hidden
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .number: "Number"
+        case .dot: "Dot"
+        case .hidden: "Hidden"
+        }
+    }
+
+    static let storageKey = "unreadBadge"
+}
+
 enum Spacing {
     static let tight: CGFloat = 3
     static let row: CGFloat = 8

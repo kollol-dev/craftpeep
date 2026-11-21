@@ -5,6 +5,7 @@ import SwiftUI
 struct CraftPeepApp: App {
     @State private var model = AppModel()
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
 
     var body: some Scene {
         Window("CraftPeep", id: "main") {
@@ -24,8 +25,10 @@ struct CraftPeepApp: App {
                 }
             }
             CommandMenu("Story") {
+                // Command-Return, not plain Return: a menu shortcut without a modifier would also fire while
+                // typing in the search field. Plain Return is handled by the story list itself.
                 Button("Open Original") { model.openSelected() }
-                    .keyboardShortcut(.return)
+                    .keyboardShortcut(.return, modifiers: .command)
                 Button("Open Discussion") { model.openSelectedDiscussion() }
                     .keyboardShortcut(.return, modifiers: [.command, .shift])
                     .disabled(model.selectedItem?.summary.discussionURL == nil)
@@ -50,13 +53,21 @@ struct CraftPeepApp: App {
         MenuBarExtra(isInserted: $showMenuBarItem) {
             PulseView(model: model)
         } label: {
-            // The count is part of the label so VoiceOver reads it.
-            Label(
-                model.unreadTopCount > 0 ? "\(model.unreadTopCount)" : "",
-                systemImage: model.unreadTopCount > 0 ? "newspaper.fill" : "newspaper"
-            )
-            .labelStyle(.titleAndIcon)
-            .accessibilityLabel("CraftPeep, \(model.unreadTopCount) unread top stories")
+            let count = model.unreadTopCount
+            switch badgeStyle {
+            case .number:
+                // The count is part of the label so VoiceOver reads it.
+                Label(count > 0 ? "\(count)" : "", systemImage: count > 0 ? "newspaper.fill" : "newspaper")
+                    .labelStyle(.titleAndIcon)
+                    .accessibilityLabel("CraftPeep, \(count) unread top stories")
+            case .dot:
+                Label(count > 0 ? "•" : "", systemImage: count > 0 ? "newspaper.fill" : "newspaper")
+                    .labelStyle(.titleAndIcon)
+                    .accessibilityLabel(count > 0 ? "CraftPeep, unread top stories" : "CraftPeep, all caught up")
+            case .hidden:
+                Image(systemName: "newspaper")
+                    .accessibilityLabel("CraftPeep")
+            }
         }
         .menuBarExtraStyle(.window)
 

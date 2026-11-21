@@ -90,6 +90,21 @@ private struct Store {
     }
 }
 
+@Suite struct SourceActivityTests {
+    @Test func newestStoryDatePerSourceUsesPublicationOrFirstSeen() async throws {
+        let store = try await Store()
+        _ = try await store.articles.upsert([
+            article(path: "old", title: "Old", published: now.addingTimeInterval(-40 * 86_400)),
+            article(path: "new", title: "New", published: now.addingTimeInterval(-3600)),
+            article(source: 2, path: "undated", title: "Undated", published: nil)
+        ])
+        let dates = try await store.sources.newestStoryDates()
+        #expect(dates[1] == now.addingTimeInterval(-3600))
+        #expect(dates[2] == now)                              // no date given: when it was first seen
+        #expect(dates[3] == nil)
+    }
+}
+
 @Suite struct ArticleRepositoryTests {
     @Test func upsertInsertsOncePerSourceAndURL() async throws {
         let store = try await Store()

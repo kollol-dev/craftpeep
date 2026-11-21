@@ -5,11 +5,17 @@ import SwiftUI
 struct PulseView: View {
     let model: AppModel
     @Environment(\.openWindow) private var openWindow
+    @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
+
+    private var heading: String {
+        if model.unreadTopCount == 0 { return "All caught up" }
+        return badgeStyle == .number ? "\(model.unreadTopCount) unread top stories" : "Unread top stories"
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text(model.unreadTopCount == 0 ? "All caught up" : "\(model.unreadTopCount) unread top stories")
+                Text(heading)
                     .font(.headline)
                 Spacer()
                 if model.isRefreshing {

@@ -258,6 +258,17 @@ Checked: 253 package tests pass; two real JSON Feeds (jsonfeed.org and Daring Fi
 
 Still open from the comparison: single-key shortcuts, a stale-sources list, and an option to hide the unread badge.
 
+### Reader basics, second part — complete (21 November 2026)
+
+- [x] Single-key shortcuts while the story list has focus: J/K, Space or N for the next unread story, M, S, F, O or Return, R. Listed in Settings → General
+- [x] Settings → Sources can show only failing sources, or sources quiet for 30 days (enabled, fetching fine, nothing new in a month), and each source shows when its newest story was published
+- [x] Unread count can be a number, a dot or hidden, in the menu bar and on Overview
+- [x] Fix: Open Original's menu shortcut is now Command-Return. Plain Return as a menu shortcut could fire while typing in the search field
+
+Checked: 254 package tests pass; the General settings render with the new controls and shortcut list; against the real database, no source is failing and none has been quiet for 30 days (the quietest, Mistral AI, last published 17 days ago), so both filters correctly show zero today.
+
+Not checked: the shortcuts themselves. Operating the app directly needs macOS Screen Recording permission for the Claude app, which is not granted, and the self-screenshot mode cannot press keys.
+
 ### M7 Desktop experience
 
 - [ ] Multi-display placement, saved layouts, always-on-top, stacks if still wanted

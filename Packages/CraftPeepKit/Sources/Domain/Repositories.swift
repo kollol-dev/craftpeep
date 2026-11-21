@@ -57,6 +57,9 @@ public protocol SourceRepository: Sendable {
     func allSources() async throws -> [Source]
     func enabledSources() async throws -> [Source]
     func setEnabled(_ enabled: Bool, sourceID: Int64) async throws
+    /// For each source, when its newest stored story was published (or first seen, if it gave no date).
+    /// Sources with nothing stored are absent.
+    func newestStoryDates() async throws -> [Int64: Date]
     /// Adds a source the user typed in. Returns false if that URL is already present.
     func addUserSource(_ definition: SourceDefinition) async throws -> Bool
     /// Removes a source and every article fetched from it.

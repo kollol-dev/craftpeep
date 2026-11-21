@@ -45,6 +45,17 @@ public struct GRDBSourceRepository: SourceRepository {
         }
     }
 
+    public func newestStoryDates() async throws -> [Int64: Date] {
+        try await database.writer.read { db in
+            var dates: [Int64: Date] = [:]
+            for row in try Row.fetchAll(db, sql: "SELECT source_id, MAX(COALESCE(published_at, retrieved_at)) AS newest FROM article GROUP BY source_id") {
+                let newest: Int64 = row["newest"]
+                dates[row["source_id"]] = Date(unixSeconds: newest)
+            }
+            return dates
+        }
+    }
+
     public func setEnabled(_ enabled: Bool, sourceID: Int64) async throws {
         try await database.writer.write { db in
             try db.execute(sql: "UPDATE source SET enabled = ? WHERE id = ?", arguments: [enabled, sourceID])

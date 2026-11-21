@@ -22,6 +22,7 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Developer Radar: fast-growing GitHub repositories, with each growth figure marked as measured or estimated; follow a project's releases in one click.
 - Add your own RSS, Atom or JSON Feed feeds, or import a whole list as OPML from another reader; export yours the same way. Switch any source off.
 - Every source in the sidebar with its own story list, and Mark All as Read (Command-K).
+- Single-key shortcuts in the story list (J/K, Space, M, S, F, O, R), and the unread count shown as a number, a dot, or not at all.
 - A menu bar item showing how many top stories are unread.
 - Stories older than 90 days are dropped unless you saved them.
 - RSS 2.0, RSS 1.0, Atom and JSON Feed parsing; Hacker News through the Algolia search API.

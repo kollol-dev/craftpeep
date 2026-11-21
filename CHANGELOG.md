@@ -11,6 +11,14 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Single-key shortcuts in the story list (J/K, Space or N, M, S, F, O or Return, R), listed in Settings → General.
+- Failing and quiet-for-30-days filters in Settings → Sources, with each source's newest story date.
+- Unread count as a number, a dot or hidden.
+
+### Fixed
+
+- Open Original's menu shortcut is now Command-Return; plain Return could fire while typing a search.
+
 - Reader basics, after comparing with NetNewsWire: JSON Feed support; OPML import and export in Settings → Sources; every source listed in the sidebar with its own story list; Mark All as Read (Command-K).
 
 ### Changed

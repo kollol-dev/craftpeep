@@ -26,6 +26,7 @@ struct SettingsView: View {
 private struct GeneralSettings: View {
     @AppStorage("density") private var density = Density.balanced
     @AppStorage("showMenuBarItem") private var showMenuBarItem = true
+    @AppStorage(UnreadBadgeStyle.storageKey) private var badgeStyle = UnreadBadgeStyle.number
     @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
     @State private var loginError: String?
 
@@ -35,6 +36,10 @@ private struct GeneralSettings: View {
                 ForEach(Density.allCases) { Text($0.title).tag($0) }
             }
             Toggle("Show CraftPeep in the menu bar", isOn: $showMenuBarItem)
+            Picker("Unread count", selection: $badgeStyle) {
+                ForEach(UnreadBadgeStyle.allCases) { Text($0.title).tag($0) }
+            }
+            .help("How the menu bar and the Overview show unread top stories. A dot or nothing takes away the pressure to catch up.")
             Toggle("Open at login", isOn: $launchAtLogin)
                 .onChange(of: launchAtLogin) { _, wanted in
                     do {
@@ -47,6 +52,20 @@ private struct GeneralSettings: View {
                 }
             if let loginError {
                 Text(loginError).font(.caption).foregroundStyle(.secondary)
+            }
+            Section("Keyboard, while the story list is selected") {
+                Grid(alignment: .leading, horizontalSpacing: 16, verticalSpacing: 4) {
+                    ForEach([
+                        ("J / K", "Next or previous story"), ("Space or N", "Next unread story"),
+                        ("M", "Mark read or unread"), ("S", "Read Later"), ("F", "Favourite"),
+                        ("O or Return", "Open the original"), ("R", "Refresh"), ("Command-K", "Mark all as read"), ("Command-Return", "Open the original, from anywhere")
+                    ], id: \.0) { key, action in
+                        GridRow {
+                            Text(key).font(.callout.monospaced())
+                            Text(action).foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
             Section("Privacy") {
                 Text("CraftPeep has no account and sends no usage data. It connects only to the sources you have switched on, without cookies. Stories older than 90 days are removed unless you saved them.")
@@ -66,10 +85,35 @@ private struct SourcesSettings: View {
     @State private var isAdding = false
     @State private var importing = false
     @State private var exporting = false
+    @State private var show = SourceListFilter.all
+
+    enum SourceListFilter: String, CaseIterable, Identifiable {
+        case all, failing, quiet
+        var id: String { rawValue }
+    }
+
+    private var failing: [Source] { model.sources.filter { $0.enabled && $0.failCount > 0 } }
+    private var quiet: [Source] { model.sources.filter(model.isQuiet) }
+
+    private var shown: [Source] {
+        switch show {
+        case .all: model.sources
+        case .failing: failing
+        case .quiet: quiet
+        }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
-            List(model.sources) { source in
+            Picker("Show", selection: $show) {
+                Text("All (\(model.sources.count))").tag(SourceListFilter.all)
+                Text("Failing (\(failing.count))").tag(SourceListFilter.failing)
+                Text("Quiet for 30 days (\(quiet.count))").tag(SourceListFilter.quiet)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .padding(12)
+            List(shown) { source in
                 HStack(alignment: .firstTextBaseline) {
                     Toggle(isOn: Binding(
                         get: { source.enabled },
@@ -123,6 +167,7 @@ private struct SourcesSettings: View {
             }
             .padding(12)
         }
+        .task { await model.loadSourceActivity() }
         .fileImporter(isPresented: $importing, allowedContentTypes: OPMLFile.readableContentTypes) { result in
             guard case .success(let url) = result else { return }
             let accessing = url.startAccessingSecurityScopedResource()
@@ -160,7 +205,10 @@ private struct SourcesSettings: View {
         if source.failCount > 0 {
             return "Failing: \(source.lastError ?? "unknown error")" + (source.lastOKAt.map { ". Last worked \($0.relative)" } ?? "")
         }
-        if let lastOK = source.lastOKAt { return "Fetched \(lastOK.relative)" }
+        if let lastOK = source.lastOKAt {
+            let newest = model.newestStory[source.id].map { "newest story \($0.relative)" } ?? "no stories in the last 90 days"
+            return "Fetched \(lastOK.relative) · \(newest)"
+        }
         return "Not fetched yet"
     }
 }
