@@ -13,7 +13,7 @@ public protocol SourceAdapter: Sendable {
 public struct RSSAdapter: SourceAdapter {
     public init() {}
 
-    public let accept = "application/atom+xml, application/rss+xml, application/xml;q=0.9, text/xml;q=0.8, */*;q=0.1"
+    public let accept = "application/atom+xml, application/rss+xml, application/feed+json, application/xml;q=0.9, text/xml;q=0.8, application/json;q=0.8, */*;q=0.1"
 
     public func parse(_ data: Data, source: Source) throws -> [RawItem] {
         try FeedParser.parse(data)

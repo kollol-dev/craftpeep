@@ -20,10 +20,11 @@ See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 - Overview, AI Intelligence, Technology News and Saved views; a detail pane listing every source for a story.
 - Read state, Read Later and Favourite. Filter by kind. Follow or mute companies, technologies and words.
 - Developer Radar: fast-growing GitHub repositories, with each growth figure marked as measured or estimated; follow a project's releases in one click.
-- Add your own RSS or Atom feeds; switch any source off.
+- Add your own RSS, Atom or JSON Feed feeds, or import a whole list as OPML from another reader; export yours the same way. Switch any source off.
+- Every source in the sidebar with its own story list, and Mark All as Read (Command-K).
 - A menu bar item showing how many top stories are unread.
 - Stories older than 90 days are dropped unless you saved them.
-- RSS 2.0, RSS 1.0 and Atom parsing; Hacker News through the Algolia search API.
+- RSS 2.0, RSS 1.0, Atom and JSON Feed parsing; Hacker News through the Algolia search API.
 - Conditional requests, so unchanged feeds cost a 304.
 - Plain-text cleaning of everything fetched, https only, per-response size and item caps.
 - Full-text search over titles and excerpts.

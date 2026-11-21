@@ -1,11 +1,16 @@
 import Domain
 import Foundation
 
-/// Parses RSS 2.0, RSS 1.0 (RDF) and Atom into raw items. Input is untrusted.
+/// Parses RSS 2.0, RSS 1.0 (RDF), Atom and JSON Feed into raw items. Input is untrusted.
 public enum FeedParser {
     public static let defaultItemLimit = 200
 
     public static func parse(_ data: Data, itemLimit: Int = defaultItemLimit) throws -> [RawItem] {
+        // JSON Feed is told apart by its first character; every XML format starts with "<".
+        if let first = data.first(where: { !($0 == 0x20 || $0 == 0x0A || $0 == 0x0D || $0 == 0x09 || $0 == 0xEF || $0 == 0xBB || $0 == 0xBF) }),
+           first == UInt8(ascii: "{") {
+            return try JSONFeedParser.parse(data, itemLimit: itemLimit)
+        }
         let handler = Handler(itemLimit: itemLimit)
         let parser = XMLParser(data: data)
         // Explicit, although these are the defaults: never fetch or expand external entities.

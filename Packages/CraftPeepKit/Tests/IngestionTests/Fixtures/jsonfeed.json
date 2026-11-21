@@ -1,0 +1,32 @@
+{
+  "version": "https://jsonfeed.org/version/1.1",
+  "title": "Example Weblog",
+  "home_page_url": "https://blog.example.net/",
+  "items": [
+    {
+      "id": "https://blog.example.net/2026/11/kestrel",
+      "url": "https://blog.example.net/2026/11/kestrel?utm_source=feed",
+      "title": "Notes on <em>Kestrel</em> 2.0",
+      "summary": "What changed in the query planner.",
+      "content_html": "<p>Long body that should not be preferred over the summary.</p>",
+      "date_published": "2026-11-10T09:30:00Z",
+      "authors": [{ "name": "Ada Example" }]
+    },
+    {
+      "id": 4242,
+      "url": "https://blog.example.net/2026/11/micro",
+      "content_text": "A short post with no title.\n\nIt still needs a headline in a list, so its opening words are used.",
+      "date_modified": "2026-11-09T18:00:00+00:00",
+      "author": { "name": "Grace Example" }
+    },
+    {
+      "id": "https://blog.example.net/2026/11/linked",
+      "external_url": "https://other.example.org/article",
+      "title": "Linked: someone else's article",
+      "content_html": "<p>Commentary <script>alert(1)</script>here.</p>"
+    },
+    { "id": "no-link", "title": "An item with nowhere to go" },
+    { "id": "empty", "url": "https://blog.example.net/empty" },
+    "not an object"
+  ]
+}

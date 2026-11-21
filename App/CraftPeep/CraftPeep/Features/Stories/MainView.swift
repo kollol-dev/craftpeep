@@ -1,16 +1,46 @@
 import Domain
 import SwiftUI
 
+/// One row in the sidebar: a fixed section or a single source.
+enum SidebarItem: Hashable {
+    case section(SidebarSection)
+    case source(Int64)
+}
+
 struct MainView: View {
     @Bindable var model: AppModel
+    @AppStorage("sidebar.sourcesExpanded") private var sourcesExpanded = true
+
+    private var sidebarSelection: Binding<SidebarItem?> {
+        Binding(
+            get: { model.section == .source ? model.selectedSourceID.map(SidebarItem.source) : .section(model.section) },
+            set: { item in
+                switch item {
+                case .section(let section)?: model.section = section
+                case .source(let id)?:
+                    model.selectedSourceID = id
+                    model.section = .source
+                case nil: break
+                }
+            }
+        )
+    }
 
     var body: some View {
         NavigationSplitView {
-            List(selection: Binding(get: { model.section }, set: { if let section = $0 { model.section = section } })) {
-                ForEach(SidebarSection.allCases) { section in
+            List(selection: sidebarSelection) {
+                ForEach(SidebarSection.main) { section in
                     Label(section.title, systemImage: section.symbol)
                         .badge(section == .overview ? model.unreadTopCount : 0)
-                        .tag(section)
+                        .tag(SidebarItem.section(section))
+                }
+                Section("Sources", isExpanded: $sourcesExpanded) {
+                    ForEach(model.sources.filter(\.enabled).sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }) { source in
+                        Label(source.name, systemImage: source.failCount > 0 ? "exclamationmark.triangle" : "dot.radiowaves.up.forward")
+                            .lineLimit(1)
+                            .help(source.failCount > 0 ? "Failing: \(source.lastError ?? "unknown error")" : source.url)
+                            .tag(SidebarItem.source(source.id))
+                    }
                 }
             }
             .navigationSplitViewColumnWidth(min: 170, ideal: 200, max: 260)
@@ -38,7 +68,7 @@ struct MainView: View {
                 ContentUnavailableView("No story selected", systemImage: "doc.text", description: Text("Choose a story to see every source reporting it."))
             }
         }
-        .searchable(text: $model.searchText, prompt: "Search \(model.section.title)")
+        .searchable(text: $model.searchText, prompt: "Search \(model.listTitle)")
         .task(id: model.searchText) {
             // Wait for a pause in typing before querying.
             try? await Task.sleep(for: .milliseconds(200))
@@ -55,7 +85,7 @@ struct StoryListView: View {
 
     var body: some View {
         content
-            .navigationTitle(model.section.title)
+            .navigationTitle(model.listTitle)
             .toolbar {
                 if model.section == .news {
                     ToolbarItem {
@@ -86,6 +116,15 @@ struct StoryListView: View {
                               ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
                     }
                     .help("Show only stories of the chosen kinds. Stories with no label are hidden while a filter is on.")
+                }
+                ToolbarItem {
+                    Button {
+                        Task { await model.markAllRead() }
+                    } label: {
+                        Label("Mark All as Read", systemImage: "checkmark.circle")
+                    }
+                    .disabled(!model.hasUnreadInList)
+                    .help("Mark every story in this list as read (Command-K)")
                 }
                 ToolbarItem {
                     Button {

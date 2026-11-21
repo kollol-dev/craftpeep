@@ -36,3 +36,17 @@ struct LiveSmokeTests {
         #expect(try await articles.latestStories(limit: 5, matching: nil).count == 5)
     }
 }
+
+/// Reads real JSON Feeds, to check the parser against publishers' actual output.
+///   CRAFTPEEP_LIVE=1 swift test --filter LiveJSONFeedTests
+@Suite(.enabled(if: ProcessInfo.processInfo.environment["CRAFTPEEP_LIVE"] == "1"))
+struct LiveJSONFeedTests {
+    @Test(arguments: ["https://www.jsonfeed.org/feed.json", "https://daringfireball.net/feeds/json"])
+    func parsesARealJSONFeed(_ address: String) async throws {
+        let result = try await URLSessionHTTPClient().get(URL(string: address)!, validators: nil, accept: RSSAdapter().accept, maxBytes: IngestionService.maxResponseBytes)
+        guard case .ok(let data, _) = result else { Issue.record("no content"); return }
+        let articles = Normaliser.normalise(try FeedParser.parse(data), source: makeSource(url: address), now: Date())
+        print("JSONFEED \(address): \(articles.count) articles; first: \(articles.first?.title ?? "-") | dated: \(articles.filter { $0.publishedAt != nil }.count)")
+        #expect(!articles.isEmpty)
+    }
+}

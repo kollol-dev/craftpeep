@@ -142,6 +142,10 @@ public struct GRDBClusterRepository: ClusterRepository {
                 WHERE c.last_seen_at >= ?
                 """
             var arguments: StatementArguments = [filter.since.unixSeconds]
+            if let sourceID = filter.sourceID {
+                sql += " AND EXISTS (SELECT 1 FROM article a WHERE a.cluster_id = c.id AND a.source_id = ?)"
+                arguments += [sourceID]
+            }
             if filter.keptOnly {
                 sql += " AND (st.saved_at IS NOT NULL OR st.favourite = 1)"
             }
@@ -218,6 +222,22 @@ public struct GRDBClusterRepository: ClusterRepository {
 
     public func setRead(_ read: Bool, clusterID: Int64, at now: Date) async throws {
         try await setState(clusterID: clusterID, column: "read_at", value: read ? now.unixSeconds : nil)
+    }
+
+    public func markRead(clusterIDs: [Int64], at now: Date) async throws {
+        guard !clusterIDs.isEmpty else { return }
+        try await database.writer.write { db in
+            for id in clusterIDs {
+                // Stories already read keep the time they were first read.
+                try db.execute(
+                    sql: """
+                        INSERT INTO cluster_state (cluster_id, read_at) VALUES (?, ?)
+                        ON CONFLICT(cluster_id) DO UPDATE SET read_at = COALESCE(read_at, excluded.read_at)
+                        """,
+                    arguments: [id, now.unixSeconds]
+                )
+            }
+        }
     }
 
     public func setSaved(_ saved: Bool, clusterID: Int64, at now: Date) async throws {

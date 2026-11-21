@@ -9,7 +9,7 @@ import SwiftUI
 ///
 ///   open --env CRAFTPEEP_SNAPSHOT=overview,select CraftPeep.app
 ///
-/// Options: a section name (overview, ai, news, radar, saved), `select` to select the first story,
+/// Options: a section name (overview, ai, news, radar, saved, source), `select` to select the first story,
 /// `panels` to also show Settings and the menu bar panel in plain windows so they can be captured.
 /// PNGs are written to the app's Application Support/CraftPeep/snapshots.
 /// Translucent chrome (sidebar, toolbar buttons) comes out blank; that is a limit of the capture.
@@ -21,6 +21,10 @@ enum DebugSnapshot {
         Task {
             try? await Task.sleep(for: .seconds(4))
             if let section = SidebarSection.allCases.first(where: { options.contains($0.rawValue) }) {
+                if section == .source {
+                    // A busy source, so the list has something in it.
+                    model.selectedSourceID = (model.sources.first { $0.name == "The Verge" } ?? model.sources.first)?.id
+                }
                 model.section = section
             }
             try? await Task.sleep(for: .seconds(1))

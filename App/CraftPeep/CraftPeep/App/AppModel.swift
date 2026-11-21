@@ -22,8 +22,13 @@ struct StoryItem: Identifiable, Equatable {
 
 enum SidebarSection: String, CaseIterable, Identifiable {
     case overview, ai, news, radar, saved
+    /// One source's stories; which source is `AppModel.selectedSourceID`.
+    case source
 
     var id: String { rawValue }
+
+    /// The fixed sections at the top of the sidebar, in order. Sources are listed separately below them.
+    static let main: [SidebarSection] = [.overview, .ai, .news, .radar, .saved]
 
     var title: String {
         switch self {
@@ -32,6 +37,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .news: "Technology News"
         case .radar: "Developer Radar"
         case .saved: "Saved"
+        case .source: "Source"
         }
     }
 
@@ -42,6 +48,7 @@ enum SidebarSection: String, CaseIterable, Identifiable {
         case .news: "newspaper"
         case .radar: "chevron.left.forwardslash.chevron.right"
         case .saved: "bookmark"
+        case .source: "dot.radiowaves.up.forward"
         }
     }
 }
@@ -126,6 +133,17 @@ final class AppModel {
     /// Empty means every kind, including unclassified.
     var kindFilter: Set<StoryKind> = [] { didSet { if kindFilter != oldValue { scheduleReload() } } }
     var searchText = ""
+    /// The source whose stories are listed when `section` is `.source`.
+    var selectedSourceID: Int64? {
+        didSet { if selectedSourceID != oldValue, section == .source { selection = nil; scheduleReload() } }
+    }
+
+    /// What the story list is titled: the section, or the source's name.
+    var listTitle: String {
+        guard section == .source else { return section.title }
+        return sources.first { $0.id == selectedSourceID }?.name ?? "Source"
+    }
+
     var selection: Int64? {
         didSet {
             guard selection != oldValue else { return }
@@ -299,6 +317,11 @@ final class AppModel {
         case .radar:
             await reloadRadar()
             return
+        case .source:
+            // Everything stored from this source, newest first, as in a feed reader.
+            filter.sourceID = selectedSourceID ?? -1
+            ranked = false
+            limit = 500
         }
         if !request.query.isEmpty {
             // Search covers everything stored for the section, newest first.
@@ -432,6 +455,62 @@ final class AppModel {
             try await services.clusters.setRead(false, clusterID: id, at: now)
             summary.readAt = nil
         }
+    }
+
+    /// Marks every story in the current list read: the section, source, search and filters as shown.
+    func markAllRead() async {
+        guard let services else { return }
+        let unread = stories.filter { !$0.summary.isRead }.map(\.id)
+        guard !unread.isEmpty else { return }
+        let now = Date()
+        do {
+            try await services.clusters.markRead(clusterIDs: unread, at: now)
+        } catch {
+            loadError = "Could not mark the stories read."
+            return
+        }
+        for index in stories.indices where stories[index].summary.readAt == nil {
+            stories[index].summary.readAt = now
+        }
+        await recountUnread()
+        await refreshWidgets()
+    }
+
+    var hasUnreadInList: Bool {
+        stories.contains { !$0.summary.isRead }
+    }
+
+    // MARK: - OPML
+
+    /// Adds the feeds an OPML file lists and says what happened, in a sentence or two.
+    func importOPML(_ data: Data) async -> String {
+        guard let services else { return "CraftPeep is not running." }
+        let feeds: [OPMLFeed]
+        do {
+            feeds = try OPML.parse(data)
+        } catch {
+            return "That file is not an OPML subscription list."
+        }
+        let plan = OPML.plan(feeds)
+        var added = 0
+        var present = 0
+        for definition in plan.definitions {
+            if (try? await services.sources.addUserSource(definition)) == true { added += 1 } else { present += 1 }
+        }
+        sources = (try? await services.sources.allSources()) ?? sources
+        // New sources are due at once; fetch them without making the caller wait.
+        if added > 0 { Task { await refresh(onlyDue: true) } }
+
+        var parts = [added == 1 ? "Added 1 feed." : "Added \(added) feeds."]
+        if present > 0 { parts.append("\(present) were already in your sources.") }
+        if plan.upgradedToHTTPS > 0 { parts.append("\(plan.upgradedToHTTPS) listed with plain http will be tried over https.") }
+        if !plan.skipped.isEmpty { parts.append("Skipped \(plan.skipped.count) that are not web addresses.") }
+        if added > 0 { parts.append("Feeds you add are marked Unverified.") }
+        return parts.joined(separator: " ")
+    }
+
+    func exportOPML() -> Data {
+        OPML.document(for: sources)
     }
 
     func markRead(_ id: Int64) async {

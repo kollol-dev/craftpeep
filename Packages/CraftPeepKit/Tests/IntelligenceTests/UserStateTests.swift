@@ -147,3 +147,43 @@ import Testing
         #expect(try await store.clusters.summaries(StoryFilter()).count == 4)
     }
 }
+
+@Suite struct ReaderBasicsStoreTests {
+    typealias Store = IntelligenceServiceTests.Store
+
+    @Test func storiesCanBeListedForOneSource() async throws {
+        let store = try await Store()
+        try await store.add("Northwind Blog", "Introducing Orion 3", url: "https://northwind.example/orion-3", hoursAgo: 3)
+        try await store.add("Hacker News", "Orion 3", url: "https://northwind.example/orion-3", hoursAgo: 2)
+        try await store.add("Wire", "The quiet death of the headphone jack", url: "https://wire.example/jack", hoursAgo: 1)
+        _ = try await store.service.process()
+
+        let hn = store.ids["Hacker News"]!
+        let fromHN = try await store.clusters.summaries(StoryFilter(sourceID: hn))
+        // A story counts for a source when that source reported it, even if another source leads it.
+        #expect(fromHN.map(\.headline) == ["Introducing Orion 3"])
+        let fromWire = try await store.clusters.summaries(StoryFilter(sourceID: store.ids["Wire"]!))
+        #expect(fromWire.map(\.headline) == ["The quiet death of the headphone jack"])
+        let fromNobody = try await store.clusters.summaries(StoryFilter(sourceID: 999_999))
+        #expect(fromNobody.isEmpty)
+    }
+
+    @Test func markingManyReadKeepsTheFirstReadTime() async throws {
+        let store = try await Store()
+        try await store.add("Wire", "One", url: "https://wire.example/1")
+        try await store.add("Wire", "Two different subject", url: "https://wire.example/2")
+        _ = try await store.service.process()
+        let stories = try await store.clusters.summaries(StoryFilter())
+        let first = try #require(stories.first { $0.headline == "One" })
+
+        try await store.clusters.setRead(true, clusterID: first.id, at: now.addingTimeInterval(-600))
+        try await store.clusters.markRead(clusterIDs: stories.map(\.id), at: now)
+        try await store.clusters.markRead(clusterIDs: [], at: now)
+
+        let after = try await store.clusters.summaries(StoryFilter())
+        let allRead = after.allSatisfy { $0.isRead }
+        #expect(allRead)
+        let earlier = after.first(where: { $0.id == first.id })
+        #expect(earlier?.readAt == now.addingTimeInterval(-600))
+    }
+}

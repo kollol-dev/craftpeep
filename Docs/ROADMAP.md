@@ -246,6 +246,18 @@ Not checked: the Clear style over a real wallpaper (the screenshots have no wall
 
 Not built: free colour choice (nine fixed colours keep every combination legible), per-widget fonts, background images, and editing a widget's layout by hand. A layout editor would mean editing widget files directly, which is a much larger feature; say if you want it.
 
+### Reader basics — complete (owner request after the NetNewsWire comparison, 21 November 2026)
+
+- [x] JSON Feed 1.0 and 1.1, alongside RSS and Atom
+- [x] OPML import (flattens folders, upgrades plain http to https, skips anything that is not a web address, marks every imported feed Unverified) and export (feed sources only)
+- [x] Each enabled source listed in the sidebar; selecting one lists every story it reported, newest first
+- [x] Mark All as Read for whatever list is showing (toolbar, Story menu, Command-K)
+- [x] File entitlement widened from read-only to read-write for files the user picks, so an export can be saved
+
+Checked: 253 package tests pass; two real JSON Feeds (jsonfeed.org and Daring Fireball) parsed fully; the built app carries the read-write user-selected file entitlement. Not checked: the import and export panels being operated, and importing a large real OPML file.
+
+Still open from the comparison: single-key shortcuts, a stale-sources list, and an option to hide the unread badge.
+
 ### M7 Desktop experience
 
 - [ ] Multi-display placement, saved layouts, always-on-top, stacks if still wanted

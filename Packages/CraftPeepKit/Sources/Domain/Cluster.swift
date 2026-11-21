@@ -289,6 +289,8 @@ public struct StoryFilter: Sendable, Equatable {
     public var kinds: Set<StoryKind>?
     /// Only stories the user saved for later or marked as a favourite.
     public var keptOnly = false
+    /// Only stories this source reported (alongside any other sources).
+    public var sourceID: Int64?
 
     public struct Subject: Sendable, Equatable {
         public var entityNames: [String]
@@ -305,8 +307,10 @@ public struct StoryFilter: Sendable, Equatable {
         query: String? = nil,
         subject: Subject? = nil,
         kinds: Set<StoryKind>? = nil,
-        keptOnly: Bool = false
+        keptOnly: Bool = false,
+        sourceID: Int64? = nil
     ) {
+        self.sourceID = sourceID
         self.since = since
         self.query = query
         self.subject = subject
@@ -327,6 +331,8 @@ public protocol ClusterRepository: Sendable {
     /// Clusters matching the filter, newest first, unranked.
     func summaries(_ filter: StoryFilter) async throws -> [ClusterSummary]
     func setRead(_ read: Bool, clusterID: Int64, at now: Date) async throws
+    /// Marks many stories read at once, in one transaction.
+    func markRead(clusterIDs: [Int64], at now: Date) async throws
     func setSaved(_ saved: Bool, clusterID: Int64, at now: Date) async throws
     func setFavourite(_ favourite: Bool, clusterID: Int64) async throws
     /// Clusters whose stored facts no longer match their members (for example after a source was removed).

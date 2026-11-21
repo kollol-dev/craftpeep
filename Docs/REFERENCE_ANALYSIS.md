@@ -165,10 +165,10 @@ Researched 21 November 2026 from netnewswire.com (home page, FAQ, privacy policy
 | Provenance labels | None | Source tier, support level, rule-based kind with the rule shown |
 | Summaries and briefing | None | Optional AI, off by default, bring your own key |
 | Beyond feeds | — | Hacker News signal, GitHub's rising repositories, desktop widgets, a menu bar item |
-| Formats | RSS, Atom, JSON Feed, RSS-in-JSON | RSS and Atom only (JSON Feed is not parsed) |
-| Folders, per-feed view | Yes | No. Stories cannot be listed for one source |
-| Mark all read, hide read | Yes | No |
-| OPML import and export | Yes | No |
+| Formats | RSS, Atom, JSON Feed, RSS-in-JSON | RSS, Atom and JSON Feed (added after this comparison) |
+| Folders, per-feed view | Yes | Per-source view added after this comparison; no folders |
+| Mark all read, hide read | Yes | Mark All as Read added; no hiding of read stories |
+| OPML import and export | Yes | Added after this comparison |
 | Keyboard | Single-key shortcuts | Command-key shortcuts only; the single-key set in the requirements was not built |
 | Sync and iPhone | Yes, nine options | No (Phase 2 and 3) |
 | Stale and failing feeds | Dinosaurs window, error and activity logs | Failing sources only |
@@ -183,6 +183,8 @@ Researched 21 November 2026 from netnewswire.com (home page, FAQ, privacy policy
 **The two can sit side by side.** A user can keep NetNewsWire for reading and use CraftPeep for the overview, with the same feed list in both. That makes OPML import the single most useful thing to borrow: it is how such a user brings their feeds across in one step.
 
 ### Worth borrowing, in order
+
+Built on 21 November 2026: items 1 to 3. Items 4 to 6 remain open.
 
 1. **OPML import and export.** The way users move feed lists between apps; small to build; the OPML parser can reuse the feed parser's limits.
 2. **JSON Feed.** Some independent blogs publish only JSON Feed. A second small parser.

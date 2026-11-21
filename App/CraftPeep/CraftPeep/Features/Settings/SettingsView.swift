@@ -1,6 +1,7 @@
 import Domain
 import ServiceManagement
 import SwiftUI
+import UniformTypeIdentifiers
 
 struct SettingsView: View {
     let model: AppModel
@@ -63,6 +64,8 @@ private struct SourcesSettings: View {
     @State private var newURL = ""
     @State private var message: String?
     @State private var isAdding = false
+    @State private var importing = false
+    @State private var exporting = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -106,11 +109,35 @@ private struct SourcesSettings: View {
                     Button("Add Feed", action: add)
                         .disabled(newURL.trimmingCharacters(in: .whitespaces).isEmpty || isAdding)
                 }
-                Text(message ?? "Feeds you add are marked Unverified. RSS and Atom over https only.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                HStack {
+                    Text(message ?? "Feeds you add are marked Unverified. RSS, Atom and JSON Feed over https.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                    Spacer()
+                    Button("Import OPML…") { importing = true }
+                        .help("Add the feeds listed in a subscription file exported from another reader")
+                    Button("Export OPML…") { exporting = true }
+                        .help("Save your feeds as a subscription file other readers can import")
+                }
             }
             .padding(12)
+        }
+        .fileImporter(isPresented: $importing, allowedContentTypes: OPMLFile.readableContentTypes) { result in
+            guard case .success(let url) = result else { return }
+            let accessing = url.startAccessingSecurityScopedResource()
+            defer { if accessing { url.stopAccessingSecurityScopedResource() } }
+            guard let data = try? Data(contentsOf: url) else {
+                message = "Could not read that file."
+                return
+            }
+            Task { message = await model.importOPML(data) }
+        }
+        .fileExporter(
+            isPresented: $exporting, document: OPMLFile(data: model.exportOPML()),
+            contentType: OPMLFile.opml, defaultFilename: "CraftPeep Sources"
+        ) { result in
+            if case .failure = result { message = "Could not save the file." }
         }
     }
 

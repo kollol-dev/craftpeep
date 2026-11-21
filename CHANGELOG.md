@@ -11,6 +11,12 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Added
 
+- Reader basics, after comparing with NetNewsWire: JSON Feed support; OPML import and export in Settings → Sources; every source listed in the sidebar with its own story list; Mark All as Read (Command-K).
+
+### Changed
+
+- The app may now save files the user chooses (for OPML export); previously it could only read them.
+
 - Widget appearance (M6c). Five styles (Automatic, Light, Dark, Clear, Tinted) and nine colours per widget, chosen from the right-click menu or in Settings → Widgets with a live preview. Widgets now use the system widgets' continuous corner, and both bundled widgets have a coloured symbol header. Schema v8.
 
 - AI widget builder (M6b). Describe a widget in words; the model picks a widget from the gallery and its settings, which are checked against the catalogue, previewed with live data, and added only on approval. Existing widgets can be changed the same way.

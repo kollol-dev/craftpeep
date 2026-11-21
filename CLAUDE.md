@@ -48,6 +48,7 @@ Major architecture changes, new dependencies, changing persistence, cloud servic
 cd Packages/CraftPeepKit && swift test                                   # all package tests
 cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveSmokeTests        # real network, checks the catalogue
 cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveEvaluationTests   # real network, prints clusters and ranking
+cd Packages/CraftPeepKit && CRAFTPEEP_LIVE=1 swift test --filter LiveJSONFeedTests     # real network, two JSON Feeds
 xcodebuild -project App/CraftPeep/CraftPeep.xcodeproj -scheme CraftPeep -destination 'platform=macOS' -derivedDataPath build build
 ./scripts/build-dmg.sh                      # local unsigned DMG
 open --env CRAFTPEEP_SNAPSHOT=overview,select,panels build/Build/Products/Debug/CraftPeep.app   # debug build photographs its own windows

@@ -18,7 +18,7 @@ struct CraftPeepApp: App {
                     .keyboardShortcut("r")
                     .disabled(model.isRefreshing || model.startupError != nil)
                 Divider()
-                ForEach(Array(SidebarSection.allCases.enumerated()), id: \.element) { index, section in
+                ForEach(Array(SidebarSection.main.enumerated()), id: \.element) { index, section in
                     Button(section.title) { model.section = section }
                         .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
                 }
@@ -40,6 +40,9 @@ struct CraftPeepApp: App {
                 .keyboardShortcut("d", modifiers: [.command, .shift])
                 Button("Mark as Unread") { Task { await model.markSelectedUnread() } }
                     .keyboardShortcut("u")
+                Button("Mark All as Read") { Task { await model.markAllRead() } }
+                    .keyboardShortcut("k")
+                    .disabled(!model.hasUnreadInList || model.section == .radar)
             }
             // Story commands act on the selection; without one there is nothing to act on.
         }
