@@ -1,53 +1,80 @@
 # CraftPeep
 
-A native macOS app for live desktop widgets that you can create three ways: describe one to an AI,
-build it visually, or write it by hand. Mac first, iPhone later.
+Peek into what's happening in technology, AI and the world.
 
-**Status:** early development. The widget spec v0.1 is drafted, the core package decodes and validates
-widget files, and a macOS app shell builds and runs. There are no real widgets on screen yet.
+CraftPeep is a native macOS app that collects technology and AI news from official feeds, groups reports of the
+same story, shows where each one came from and how fresh it is, and ranks them with the reasons visible. Later
+milestones add briefings and desktop widgets. Local-first, no account, sandboxed. Free and open source. Mac first, iPhone later.
 
-## Idea
+**Status:** early development. The app fetches 33 feeds, the Hacker News front page and GitHub's search API, groups reports of the
+same story, labels and ranks them by rules, and presents them in a three-pane reader with a menu bar companion.
+Optional AI summaries and a daily briefing are built but have not yet been run against a real model. Two desktop widgets are included (News List and Rising Repositories); none is on the desktop until you add it.
+See [Docs/ROADMAP.md](Docs/ROADMAP.md) for what is done and what is next.
 
-Every widget is a single declarative JSON file. The AI builder, the visual builder, the spec editor and
-hand-written files all produce and edit the same format. The Mac app renders it with SwiftUI, and the same
-core package can later power an iPhone app through WidgetKit.
+## What works today
 
-Principles:
-
-- Declarative, not executable: safe to share, previewable without running anything, portable to iOS.
-- Permissions are data: the install sheet is generated from the spec and enforced by the runtime.
-- Secrets never live in widget files (Keychain only).
-- Small closed vocabulary first; grow it from real user requests.
+- Each source refreshes on its own interval while the app runs; failing sources back off. Cmd+R refreshes everything.
+- One row per story: the same story from several sources is grouped, with every source listed.
+- Rule-based labels (shipping, announcement, research, funding and so on) that record which rule fired. Most stories are left unlabelled rather than guessed.
+- Top view ranked by source authority, independent coverage, community interest and recency, with the reasons shown. Latest view is newest first.
+- Overview, AI Intelligence, Technology News and Saved views; a detail pane listing every source for a story.
+- Read state, Read Later and Favourite. Filter by kind. Follow or mute companies, technologies and words.
+- Developer Radar: fast-growing GitHub repositories, with each growth figure marked as measured or estimated; follow a project's releases in one click.
+- Add your own RSS, Atom or JSON Feed feeds, or import a whole list as OPML from another reader; export yours the same way. Switch any source off.
+- Every source in the sidebar with its own story list, and Mark All as Read (Command-K).
+- Single-key shortcuts in the story list (J/K, Space, M, S, F, O, R), and the unread count shown as a number, a dot, or not at all.
+- A menu bar item showing how many top stories are unread.
+- Stories older than 90 days are dropped unless you saved them.
+- RSS 2.0, RSS 1.0, Atom and JSON Feed parsing; Hacker News through the Algolia search API.
+- Conditional requests, so unchanged feeds cost a 304.
+- Plain-text cleaning of everything fetched, https only, per-response size and item caps.
+- Full-text search over titles and excerpts.
+- Per-source health: a failing feed is listed with its error and never blocks the others.
+- Works offline from the local store.
+- Desktop widgets: a News List and Rising Repositories, each defined as a declarative JSON file and drawn natively. Add as many as you like from Settings → Widgets, or, with AI on, by describing what you want. Each widget can be Automatic, Light, Dark, Clear or Tinted, in one of nine colours. Widgets read the local store;
+  they cannot fetch, run commands or read files.
 
 ## Repository layout
 
 | Path | Contents |
 |---|---|
 | `App/CraftPeep/` | macOS app (Xcode project, SwiftUI) |
-| `Packages/WidgetProCore/` | Swift package: `Sources/` and `Tests/` |
-| `Docs/SPEC.md` | Widget spec v0.1 overview: anatomy, data sources, components, expressions |
-| `Schema/widget.schema.json` | JSON Schema for validation and editor autocomplete |
-| `Examples/` | Clock, markets ticker and AI news briefing example widgets |
+| `Packages/CraftPeepKit/` | Swift package with all non-UI code |
+| `Docs/` | Requirements, architecture, data sources, security, roadmap, decisions |
+| `Schema/`, `Examples/` | Widget spec JSON Schema (v0.2) and example widgets written for v0.1; the examples use network sources the app does not run |
 | `scripts/build-dmg.sh` | Builds a Release app and packages it as a DMG (local use) |
 
 Package targets:
 
-| Target | Purpose |
-|---|---|
-| `WidgetSpec` | Codable models, loader, validation, version handling |
-| `WidgetExpr` | `{{ }}` expression interpreter (not started) |
-| `WidgetData` | Data sources, scheduler, caching, permission enforcement (not started) |
-| `WidgetRender` | SwiftUI rendering of a spec plus data (not started) |
+| Target | Purpose | State |
+|---|---|---|
+| `Domain` | Value types and repository protocols. No I/O. | In use |
+| `Persistence` | SQLite schema, migrations, repositories, full-text search (GRDB) | In use |
+| `Ingestion` | HTTP client, feed parser, Hacker News adapter, cleaning, refresh service, source catalogue | In use |
+| `Intelligence` | Clustering, classification rules, tagging, ranking | In use |
+| `AI` | Provider clients, Keychain, usage ledger and budget, summaries, briefing | In use, untested against a live model |
+| `WidgetSpec` | Codable widget models, loader, validation | In use |
+| `WidgetExpr` | Expression interpreter for widget files | In use |
+| `WidgetRuntime` | Resolves a widget's settings and store queries; holds the bundled widgets | In use |
+| `WidgetRender` | Pure render tree and the SwiftUI views that draw it | In use |
+| `WidgetBuilder` | Turns a description into a choice of widget and settings, checked against the catalogue | In use, untested against a live model |
 
 ## Getting started
 
-Requires a recent Xcode with Swift 6 and macOS 14 or later.
-
-Run the package tests:
+Requires Xcode with Swift 6 and macOS 15 or later.
 
 ```sh
-cd Packages/WidgetProCore
+cd Packages/CraftPeepKit
 swift test
+```
+
+Two tests use the real network and only run on request. The first checks every bundled feed; the second prints
+what clustering, labelling and ranking make of today's news:
+
+```sh
+cd Packages/CraftPeepKit
+CRAFTPEEP_LIVE=1 swift test --filter LiveSmokeTests
+CRAFTPEEP_LIVE=1 swift test --filter LiveEvaluationTests
 ```
 
 Run the app: open `App/CraftPeep/CraftPeep.xcodeproj` in Xcode, choose **My Mac**, press Cmd+R.
@@ -61,31 +88,21 @@ Build a DMG for local use:
 The DMG is not notarised, so macOS may block it on first launch: open System Settings > Privacy & Security
 and choose **Open Anyway**.
 
-## Writing a widget
+## Privacy
 
-Start from a file in `Examples/` and check it against `Schema/widget.schema.json`. The core package also
-validates rules the schema cannot express, for example that every network host a data source uses is
-declared in `permissions.network`.
+CraftPeep has no account and sends no telemetry. AI is off unless you switch it on and supply your own key or a local model; when on, it sends the headlines and excerpts of the stories being summarised to the provider you chose, and nothing else. Otherwise it connects only to the feeds in
+[sources.catalog.json](Packages/CraftPeepKit/Sources/Ingestion/Resources/sources.catalog.json), without cookies.
+Stories are stored in the app's sandbox container. See [Docs/SECURITY.md](Docs/SECURITY.md).
 
-## Roadmap
+## Dependencies
 
-- [x] App shell linked to the core package
-- [ ] 1. Spec models, loader and validation, with tests against the example widgets
-- [ ] 2. Expression interpreter with tests for every function
-- [ ] 3. Renderer: draw the clock, then lists and conditionals
-- [ ] 4. Floating desktop widget window with persisted position
-- [ ] 5. Data sources: time, http, rss behind a scheduler, with network permissions enforced
-- [ ] 6. Settings form and install/permission sheet, Keychain for secrets
-- [ ] 7. Spec editor with live preview
-- [ ] 8. AI builder: provider abstraction, schema-constrained generation, validate and retry
-- [ ] 9. Distribution: signing, notarisation, DMG, updates, licensing
-- [ ] 10. Later: visual builder, data source builder, gallery and shareable setups, iPhone app
+One: [GRDB.swift](https://github.com/groue/GRDB.swift) (MIT), pinned to an exact version.
 
-## Notes
+## Acknowledgements
 
-This project is inspired by the idea of describing a widget in plain language and getting a live one.
-It reimplements concepts from scratch: no code, assets, names or branding from other apps.
+The idea of describing a widget in plain language came from other desktop widget apps. CraftPeep reimplements
+concepts from scratch: no code, assets, names or branding from other apps.
 
-## License
+## Licence
 
-To be decided.
+To be decided before the repository is made public. See ADR-012 in [Docs/DECISIONS.md](Docs/DECISIONS.md).

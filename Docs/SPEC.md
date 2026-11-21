@@ -1,4 +1,6 @@
-# WidgetPro Widget Spec v0.1 (draft)
+# CraftPeep Widget Spec v0.2 (draft)
+
+> **What runs today.** The app loads spec 0.1 and 0.2 files. It resolves `static`, `time` and `query` sources; `http`, `rss`, `system` and `ai` sources are declared here but deliberately not run. It draws `vstack`, `hstack`, `zstack`, `spacer`, `divider`, `text`, `number`, `icon`, `badge`, `button` and `list`; `image`, `progress` and `chart` are not drawn yet. The `commands` and `files` permissions from the first draft are refused. Two widgets ship: News List and Rising Repositories.
 
 A widget is **one JSON file**. Every authoring method (AI builder, visual builder, spec editor, hand-written files) produces and edits this same format. The Mac app renders it with SwiftUI; the iPhone app can later render the same file through WidgetKit.
 
@@ -22,8 +24,9 @@ Files in this folder:
 | Key | Purpose |
 |---|---|
 | `spec`, `id`, `name`, `version` | Identity. `id` is reverse-DNS, `version` is semver. |
+| `symbol` | Optional SF Symbol name (lowercase letters, digits and dots) for the header icon tile. The host draws the header (icon, title or view menu, unread count) and the footer (updated time, refresh, settings); the widget file draws only the content. |
 | `sizes`, `platforms` | Which sizes and platforms the widget supports. |
-| `permissions` | `network` hosts, `system` sources, `ai`, plus macOS-only `commands` and `files`. |
+| `permissions` | `network` hosts, `system` sources, `ai`. A widget that only uses `query` sources needs none. |
 | `settings` | Drives the auto-generated settings form. Types: string, number, boolean, select, color, stringList, secret. |
 | `data` | Named data sources (below). Results are available as `data.<name>`. |
 | `view` | One component tree per size; `default` is the fallback. |
@@ -32,6 +35,7 @@ Files in this folder:
 
 | Type | What it does | Notes |
 |---|---|---|
+| `query` | Read from CraftPeep's local store | Spec 0.2. `from: "repositories"` takes `where.language` and exposes `fullName`, `owner`, `name`, `description`, `url`, `language`, `stars`, `starsPerDay`, `growth`, `isMeasured`. `from: "stories"`, optional `where` (`view`, `subject`, `entities`, `kinds`, `sinceHours`, `saved`). `view` is `overview` (ranked), `ai` (ranked, AI subject), `latest` (newest, 14 days), `saved`, or `folder:Name` (newest from that folder's sources, 14 days); a widget whose settings include `view` gets the header menu for switching it, `sort` (`rank` or `latest`), `limit` up to 50. Needs no permission and makes no network request. Each story exposes `headline`, `excerpt`, `url`, `discussionURL`, `source`, `sources`, `sourceCount`, `kind`, `kindSymbol`, `support`, `publishedAt`, `points`, `comments`, `isRead`, `isSaved`, and `monogram` and `sourceColor` (a stable colour per source) for a source tile. Repositories also expose `monogram` and `sourceColor`. |
 | `static` | Literal value | For lookup tables and constants. |
 | `time` | Current date and time | Exposes `.date`. |
 | `http` | GET a JSON endpoint | Host must be in `permissions.network`. `path` picks a sub-object, `map` reshapes, `each` fans out one request per array element. |
@@ -45,11 +49,13 @@ All sources accept `refresh`. The runtime only refreshes sources for widgets tha
 
 Layout: `vstack`, `hstack`, `zstack`, `spacer`, `divider`.
 Content: `text`, `number`, `image`, `icon`, `badge`, `progress` (ring or bar), `chart` (line, area, sparkline, columns).
-Structure: `list` (repeat a template over an array), `button`.
+Structure: `list` (repeat a template over an array; the template sees `index`, starting at 0), `button`.
+
+Any component can take `width` and `height` in points (0 to 600). Text takes `design`: `default`, `rounded`, `serif` or `monospaced`.
 
 Any component can take `when` (conditional render) and `action` (`openURL`, `copy`, `refresh`).
 
-Colours are tokens (`primary`, `secondary`, `accent`, `positive`, `negative`), hex values, or expressions that resolve to either. Themes remap the tokens, so one widget works across all themes without edits.
+Colours are tokens (`primary`, `secondary`, `accent`, `positive`, `negative`), hex values, or expressions that resolve to either. `accent` is the colour the user chose for that widget, and `primary` and `secondary` follow the widget's style (solid white on a tinted widget), so a widget file should use tokens rather than hex values for text. Themes remap the tokens, so one widget works across all themes without edits.
 
 ## Expressions
 

@@ -1,18 +1,18 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://widgetpro.example/schema/0.1/widget.json",
-  "title": "WidgetPro widget spec v0.1 (draft)",
+  "$id": "https://craftpeep.example/schema/0.2/widget.json",
+  "title": "CraftPeep widget spec v0.2 (draft)",
   "description": "Declarative widget definition. Intentionally loose in v0.1; tighten data sources with oneOf per type once the runtime exists.",
   "type": "object",
   "required": ["spec", "id", "name", "version", "view"],
   "additionalProperties": false,
   "properties": {
     "$schema": { "type": "string" },
-    "spec": { "const": "0.1" },
+    "spec": { "enum": ["0.1", "0.2"] },
     "id": {
       "type": "string",
       "pattern": "^[a-z0-9]+(\\.[a-z0-9-]+)+$",
-      "description": "Reverse-DNS style unique id, e.g. com.widgetpro.clock"
+      "description": "Reverse-DNS style unique id, e.g. com.craftpeep.clock"
     },
     "name": { "type": "string", "maxLength": 60 },
     "description": { "type": "string", "maxLength": 300 },
@@ -60,9 +60,7 @@
           "type": "array",
           "items": { "enum": ["calendar", "reminders", "battery", "cpu", "memory", "network", "nowPlaying", "location"] }
         },
-        "ai": { "type": "boolean", "description": "May call the user's configured AI provider." },
-        "commands": { "type": "boolean", "description": "macOS only. Shell commands. Always shown on the install sheet." },
-        "files": { "type": "array", "items": { "type": "string" }, "description": "macOS only. Paths the widget may read." }
+        "ai": { "type": "boolean", "description": "May call the user's configured AI provider." }
       }
     },
     "setting": {
@@ -92,7 +90,7 @@
       "required": ["type"],
       "additionalProperties": false,
       "properties": {
-        "type": { "enum": ["static", "time", "http", "rss", "system", "ai"] },
+        "type": { "enum": ["static", "time", "http", "rss", "system", "ai", "query"] },
         "refresh": { "type": "string", "description": "Duration like '30s', '15m', '1h', or an expression that evaluates to one." },
         "value": { "description": "static: literal value." },
         "url": { "type": "string", "description": "http/rss: may contain {{ }} expressions." },
@@ -107,7 +105,25 @@
         "input": { "type": "string", "description": "ai: expression producing the text to process." },
         "prompt": { "type": "string", "description": "ai: instruction for the model." },
         "cache": { "type": "string", "description": "ai: minimum time between model calls, e.g. '1h'." },
-        "maxTokens": { "type": "integer", "maximum": 1000 }
+        "maxTokens": { "type": "integer", "maximum": 1000 },
+        "from": { "enum": ["stories", "repositories"], "description": "query (spec 0.2): the collection to read from the local store." },
+        "sort": { "enum": ["rank", "latest"], "description": "query: most important first, or newest first. Defaults to rank." },
+        "where": {
+          "type": "object",
+          "additionalProperties": false,
+          "description": "query: conditions. Strings may contain {{ }} expressions.",
+          "properties": {
+            "subject": { "type": "string", "description": "'all' or 'ai', or an expression giving one of them." },
+            "entities": { "type": "array", "maxItems": 20, "items": { "type": "string" } },
+            "kinds": {
+              "type": "array",
+              "items": { "enum": ["shipping", "announcement", "research", "benchmark", "funding", "partnership", "speculation", "unverified_claim"] }
+            },
+            "sinceHours": { "type": "number", "minimum": 1, "maximum": 2160 },
+            "saved": { "type": "boolean" },
+            "language": { "type": "string", "description": "repositories: main language, or an expression giving one. Empty means any." }
+          }
+        }
       }
     },
     "action": {

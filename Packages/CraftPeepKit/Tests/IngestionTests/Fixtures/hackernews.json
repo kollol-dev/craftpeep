@@ -1,0 +1,9 @@
+{
+  "hits": [
+    { "objectID": "40000001", "title": "Acme ships Widget 2.0", "url": "https://example.com/2026/11/widget-2/", "author": "pg_example", "points": 640, "num_comments": 211, "created_at_i": 1794303000, "story_text": null },
+    { "objectID": "40000002", "title": "Ask HN: How do you keep up with AI news?", "url": null, "author": "someone", "points": 120, "num_comments": 95, "created_at_i": 1794299400, "story_text": "I read <i>too many</i> tabs." },
+    { "objectID": "40000003", "title": "", "url": "https://example.com/untitled", "author": "x", "points": 1, "num_comments": 0, "created_at_i": 1794299400 },
+    { "objectID": "40000004", "title": "Negative numbers are ignored", "url": "https://example.com/neg", "author": "y", "points": -5, "num_comments": 3, "created_at_i": 1794299400 }
+  ],
+  "nbHits": 4, "page": 0
+}

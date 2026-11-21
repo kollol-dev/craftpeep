@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+  <head><title>Subscriptions exported from a reader</title></head>
+  <body>
+    <outline text="Technology" title="Technology">
+      <outline text="Example Tech" title="Example Tech" type="rss" xmlUrl="https://example.com/feed" htmlUrl="https://example.com/"/>
+      <outline text="Old Site" type="rss" xmlUrl="http://old.example.org/rss.xml" htmlUrl="http://old.example.org"/>
+      <outline text="Example Tech again" type="rss" xmlUrl="https://example.com/feed"/>
+    </outline>
+    <outline TEXT="Uppercase Attributes" XMLURL="https://caps.example.net/atom.xml"/>
+    <outline text="No title either" xmlurl="https://untitled.example.net/feed.json" title=""/>
+    <outline text="A folder with nothing in it"/>
+    <outline text="Not a web address" type="rss" xmlUrl="file:///etc/passwd"/>
+    <outline text="Javascript" type="rss" xmlUrl="javascript:alert(1)"/>
+    <outline text="Name &amp; &lt;markup&gt;" type="rss" xmlUrl="https://markup.example.com/feed?a=1&amp;b=2"/>
+  </body>
+</opml>

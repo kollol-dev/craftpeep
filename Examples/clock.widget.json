@@ -1,7 +1,7 @@
 {
-  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "$schema": "https://craftpeep.example/schema/0.1/widget.json",
   "spec": "0.1",
-  "id": "com.widgetpro.clock",
+  "id": "com.craftpeep.clock",
   "name": "Clock",
   "description": "Time and date, with optional seconds.",
   "version": "1.0.0",

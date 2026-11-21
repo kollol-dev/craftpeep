@@ -1,7 +1,7 @@
 {
-  "$schema": "https://widgetpro.example/schema/0.1/widget.json",
+  "$schema": "https://craftpeep.example/schema/0.1/widget.json",
   "spec": "0.1",
-  "id": "com.widgetpro.ai-news",
+  "id": "com.craftpeep.ai-news",
   "name": "AI News Briefing",
   "description": "Top Hacker News stories for a topic, with a short AI-written briefing.",
   "version": "1.0.0",

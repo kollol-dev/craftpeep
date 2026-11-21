@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/">
+  <channel>
+    <title>Example Tech</title>
+    <link>https://example.com</link>
+    <description>Synthetic fixture</description>
+    <item>
+      <title>Acme ships &lt;b&gt;Widget&lt;/b&gt; 2.0 &amp; open-sources the runtime</title>
+      <link>https://www.example.com/2026/11/widget-2/?utm_source=rss&amp;utm_medium=feed#comments</link>
+      <guid isPermaLink="false">example-1001</guid>
+      <pubDate>Tue, 10 Nov 2026 09:30:00 +0000</pubDate>
+      <dc:creator><![CDATA[Ada Example]]></dc:creator>
+      <description><![CDATA[<p>The <a href="https://example.com/x">runtime</a> is now on GitHub.</p><script>alert("x")</script><p>Benchmarks&nbsp;included.</p>]]></description>
+      <content:encoded><![CDATA[<p>Full body that should not be preferred over the description.</p>]]></content:encoded>
+    </item>
+    <item>
+      <title>Story with no date</title>
+      <link>https://example.com/no-date</link>
+      <description>Plain text excerpt.</description>
+    </item>
+    <item>
+      <title>Permalink only in guid</title>
+      <guid>https://example.com/guid-permalink</guid>
+      <pubDate>Mon, 09 Nov 2026 18:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>Dangerous link is dropped later</title>
+      <link>javascript:alert(1)</link>
+    </item>
+    <item>
+      <link>https://example.com/no-title</link>
+    </item>
+    <item>
+      <title>Relative link</title>
+      <link>/posts/relative</link>
+      <pubDate>Tue, 10 Nov 2099 09:30:00 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

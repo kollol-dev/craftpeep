@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Merged with the generated Info.plist. Declares OPML so the open panel recognises .opml files
+	     on Macs where no other installed app has declared the type. -->
+	<!-- Lets URLSession reach plain-http feeds at all. The ingestion code still refuses http for every
+	     source except those the user has explicitly allowed (Settings → Sources), and the AI client only
+	     allows http to this Mac. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>UTImportedTypeDeclarations</key>
+	<array>
+		<dict>
+			<key>UTTypeIdentifier</key>
+			<string>org.opml.opml</string>
+			<key>UTTypeDescription</key>
+			<string>OPML subscription list</string>
+			<key>UTTypeConformsTo</key>
+			<array>
+				<string>public.xml</string>
+			</array>
+			<key>UTTypeTagSpecification</key>
+			<dict>
+				<key>public.filename-extension</key>
+				<array>
+					<string>opml</string>
+				</array>
+				<key>public.mime-type</key>
+				<array>
+					<string>text/x-opml</string>
+				</array>
+			</dict>
+		</dict>
+	</array>
+</dict>
+</plist>

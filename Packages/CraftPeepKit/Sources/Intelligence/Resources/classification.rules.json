@@ -1,0 +1,91 @@
+{
+  "kindRules": [
+    { "id": "research-host", "kind": "research", "confidence": "high",
+      "hosts": ["arxiv.org", "openreview.net", "aclanthology.org", "biorxiv.org"] },
+
+    { "id": "github-release", "kind": "shipping", "confidence": "high",
+      "hosts": ["github.com"], "urlContains": ["/releases"] },
+
+    { "id": "unverified-claim", "kind": "unverified_claim", "confidence": "low",
+      "tiers": ["community", "unverified"],
+      "titleAny": ["claims to", "claims it", "allegedly", "unconfirmed"] },
+
+    { "id": "speculation", "kind": "speculation", "confidence": "medium",
+      "tiers": ["reporting", "analysis", "community", "unverified"],
+      "titleAny": ["reportedly", "rumor", "rumour", "rumored", "rumoured", "rumors", "rumours",
+                   "sources say", "said to be", "is said to", "may be planning", "could launch", "expected to",
+                   "in talks", "is considering"] },
+
+    { "id": "funding", "kind": "funding", "confidence": "medium",
+      "titleAny": ["raises", "raised", "funding round", "series a", "series b", "series c", "series d", "seed round",
+                   "acquires", "acquired", "acquisition", "to acquire", "to buy", "merger", "ipo", "valuation", "valued at"] },
+
+    { "id": "partnership", "kind": "partnership", "confidence": "medium",
+      "titleAny": ["partners with", "partnership", "partnering with", "teams up with", "collaboration with",
+                   "joins forces", "strategic alliance", "signs deal", "deal with"] },
+
+    { "id": "benchmark", "kind": "benchmark", "confidence": "medium",
+      "titleAny": ["benchmark", "benchmarks", "benchmarking", "leaderboard", "evals", "state of the art", "sota", "outperforms"] },
+
+    { "id": "research-title", "kind": "research", "confidence": "low",
+      "titleAny": ["research paper", "new paper", "preprint", "study finds", "new study", "we present", "arxiv"] },
+
+    { "id": "shipping-title", "kind": "shipping", "confidence": "medium",
+      "titleAny": ["released", "now available", "generally available", "general availability", "open sources", "open sourced",
+                   "open sourcing", "ships", "shipped", "is out", "public beta", "release notes", "changelog", "now in beta",
+                   "available today", "rolls out", "rolling out"] },
+
+    { "id": "announcement-official", "kind": "announcement", "confidence": "medium",
+      "tiers": ["official", "documentation"],
+      "titleAny": ["introducing", "announcing", "announces", "announce", "unveils", "unveiling", "launches", "launching",
+                   "launch", "coming soon", "preview", "meet"] },
+
+    { "id": "announcement-reported", "kind": "announcement", "confidence": "low",
+      "tiers": ["reporting", "analysis", "community", "unverified"],
+      "titleAny": ["announces", "unveils", "launches", "introduces", "debuts", "reveals"] }
+  ],
+
+  "entities": [
+    { "name": "OpenAI", "kind": "company", "aliases": ["openai", "chatgpt", "gpt 4", "gpt 5", "sam altman"] },
+    { "name": "Anthropic", "kind": "company", "aliases": ["anthropic"], "exact": ["Claude"] },
+    { "name": "Google", "kind": "company", "aliases": ["google", "alphabet inc", "gemini"], "exact": ["Alphabet"] },
+    { "name": "Google DeepMind", "kind": "company", "aliases": ["deepmind"] },
+    { "name": "Microsoft", "kind": "company", "aliases": ["microsoft", "azure", "satya nadella"], "exact": ["Copilot"] },
+    { "name": "Meta", "kind": "company", "aliases": ["meta ai", "meta platforms", "facebook", "instagram", "whatsapp", "zuckerberg"], "exact": ["Meta"] },
+    { "name": "Apple", "kind": "company", "aliases": ["iphone", "ipad", "macos", "ios", "wwdc", "xcode", "tim cook"], "exact": ["Apple"] },
+    { "name": "NVIDIA", "kind": "company", "aliases": ["nvidia", "jensen huang"] },
+    { "name": "Amazon", "kind": "company", "aliases": ["amazon", "aws"] },
+    { "name": "Tesla", "kind": "company", "aliases": ["tesla"] },
+    { "name": "Mistral", "kind": "company", "aliases": ["mistral ai"], "exact": ["Mistral"] },
+    { "name": "xAI", "kind": "company", "aliases": ["xai"], "exact": ["Grok"] },
+    { "name": "Hugging Face", "kind": "company", "aliases": ["hugging face", "huggingface"] },
+    { "name": "GitHub", "kind": "company", "aliases": ["github"] },
+    { "name": "Cloudflare", "kind": "company", "aliases": ["cloudflare"] },
+    { "name": "Intel", "kind": "company", "exact": ["Intel"] },
+    { "name": "AMD", "kind": "company", "exact": ["AMD"] },
+    { "name": "TSMC", "kind": "company", "aliases": ["tsmc"] },
+    { "name": "Samsung", "kind": "company", "aliases": ["samsung"] },
+
+    { "name": "Swift", "kind": "technology", "aliases": ["swiftui"], "exact": ["Swift"] },
+    { "name": "Rust", "kind": "technology", "aliases": ["rustc", "rustlang"], "exact": ["Rust"] },
+    { "name": "Go", "kind": "technology", "aliases": ["golang"] },
+    { "name": "Python", "kind": "technology", "aliases": ["python", "pypi"] },
+    { "name": "TypeScript", "kind": "technology", "aliases": ["typescript"] },
+    { "name": "JavaScript", "kind": "technology", "aliases": ["javascript", "node js", "nodejs"] },
+    { "name": "Kubernetes", "kind": "technology", "aliases": ["kubernetes", "k8s"] },
+    { "name": "Docker", "kind": "technology", "aliases": ["docker"] },
+    { "name": "PostgreSQL", "kind": "technology", "aliases": ["postgres", "postgresql"] },
+    { "name": "SQLite", "kind": "technology", "aliases": ["sqlite"] },
+    { "name": "Linux", "kind": "technology", "aliases": ["linux"] },
+    { "name": "WebAssembly", "kind": "technology", "aliases": ["webassembly", "wasm"] },
+
+    { "name": "AI", "kind": "topic", "aliases": ["ai", "artificial intelligence", "llm", "llms", "machine learning", "generative ai", "genai", "neural network", "language model", "language models"] },
+    { "name": "AI agents", "kind": "topic", "aliases": ["ai agent", "ai agents", "agentic", "coding agent", "coding agents"] },
+    { "name": "Open source", "kind": "topic", "aliases": ["open source", "open sourced", "open sources", "open weights"] },
+    { "name": "Security", "kind": "topic", "aliases": ["vulnerability", "vulnerabilities", "cve", "exploit", "data breach", "malware", "ransomware", "zero day", "security"] },
+    { "name": "Chips", "kind": "topic", "aliases": ["gpu", "gpus", "chip", "chips", "semiconductor", "semiconductors"] },
+    { "name": "Regulation", "kind": "topic", "aliases": ["regulation", "regulators", "antitrust", "ai act", "lawsuit", "ftc", "doj", "european commission"] },
+    { "name": "Layoffs", "kind": "topic", "aliases": ["layoffs", "lays off", "laid off", "job cuts"] },
+    { "name": "Earnings", "kind": "topic", "aliases": ["earnings", "quarterly results", "quarterly revenue"] }
+  ]
+}
