@@ -54,6 +54,8 @@ public struct Source: Sendable, Equatable, Identifiable {
     public var lastError: String?
     /// Added by the user rather than shipped in the catalogue.
     public var isUserAdded: Bool
+    /// The user has allowed plain http for this feed, for sites that offer nothing else.
+    public var allowsInsecureHTTP: Bool
 
     public init(
         id: Int64,
@@ -70,9 +72,11 @@ public struct Source: Sendable, Equatable, Identifiable {
         lastOKAt: Date? = nil,
         failCount: Int = 0,
         lastError: String? = nil,
-        isUserAdded: Bool = false
+        isUserAdded: Bool = false,
+        allowsInsecureHTTP: Bool = false
     ) {
         self.isUserAdded = isUserAdded
+        self.allowsInsecureHTTP = allowsInsecureHTTP
         self.id = id
         self.kind = kind
         self.name = name

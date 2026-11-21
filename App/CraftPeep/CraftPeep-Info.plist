@@ -4,6 +4,14 @@
 <dict>
 	<!-- Merged with the generated Info.plist. Declares OPML so the open panel recognises .opml files
 	     on Macs where no other installed app has declared the type. -->
+	<!-- Lets URLSession reach plain-http feeds at all. The ingestion code still refuses http for every
+	     source except those the user has explicitly allowed (Settings → Sources), and the AI client only
+	     allows http to this Mac. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>UTImportedTypeDeclarations</key>
 	<array>
 		<dict>

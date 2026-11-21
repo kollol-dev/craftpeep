@@ -117,6 +117,8 @@ Recalled: official Atom-based API, no key, a courtesy limit of roughly one reque
 
 ## Reddit (not planned)
 
+Observed 21 November 2026 with a user's imported OPML: Reddit's per-subreddit RSS answers CraftPeep with 404 or 429, also with a descriptive user agent. NetNewsWire reportedly reads the same feeds. CraftPeep does not imitate another app's identity, so these feeds fail and the message says the site is blocking feed readers. VentureBeat's AI feed answers 429 with a bot-check page; CraftPeep does not try to get past bot protection.
+
 - **Reported**, consistently across sources: free tier requires OAuth, allows about 100 queries per minute per client, and is non-commercial only; commercial use needs a contract with Reddit; unauthenticated traffic is blocked; terms last revised July 2026.
 - Whether per-subreddit RSS feeds fall under the same terms was not established.
 - **Recommendation:** leave Reddit out. If wanted later for personal use, let the user register their own Reddit app and enter their own credentials, and keep it off by default. HN already supplies the community-interest signal.

@@ -14,6 +14,7 @@ actor FakeHTTPClient: HTTPClient {
     struct Call: Sendable, Equatable {
         var url: String
         var validators: HTTPValidators?
+        var allowInsecure = false
     }
 
     private var replies: [String: [Reply]] = [:]
@@ -23,9 +24,9 @@ actor FakeHTTPClient: HTTPClient {
         replies[url] = sequence
     }
 
-    func get(_ url: URL, validators: HTTPValidators?, accept: String, maxBytes: Int) async throws -> HTTPResult {
+    func get(_ url: URL, validators: HTTPValidators?, accept: String, maxBytes: Int, allowInsecure: Bool) async throws -> HTTPResult {
         let key = url.absoluteString
-        calls.append(Call(url: key, validators: validators))
+        calls.append(Call(url: key, validators: validators, allowInsecure: allowInsecure))
         guard var queue = replies[key], let next = queue.first else {
             throw IngestionError.httpStatus(404)
         }
@@ -119,7 +120,7 @@ struct Harness {
 
         let lab = try #require(try await harness.sources.allSources().first { $0.url == Harness.atomURL })
         #expect(lab.failCount == 1)
-        #expect(lab.lastError == "Server returned HTTP 503")
+        #expect(lab.lastError == IngestionError.httpStatus(503).description)
         #expect(lab.lastOKAt == nil)
 
         let tech = try #require(try await harness.sources.allSources().first { $0.url == Harness.rssURL })

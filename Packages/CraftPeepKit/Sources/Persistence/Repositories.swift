@@ -56,6 +56,26 @@ public struct GRDBSourceRepository: SourceRepository {
         }
     }
 
+    public func setTier(_ tier: SourceTier, sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(sql: "UPDATE source SET tier = ? WHERE id = ?", arguments: [tier.rawValue, sourceID])
+        }
+    }
+
+    public func setAllowsInsecureHTTP(_ allowed: Bool, sourceID: Int64) async throws {
+        try await database.writer.write { db in
+            try db.execute(
+                sql: """
+                    UPDATE source SET allow_http = ?,
+                      fail_count = CASE WHEN ? THEN 0 ELSE fail_count END,
+                      last_fetch_at = CASE WHEN ? THEN NULL ELSE last_fetch_at END
+                    WHERE id = ?
+                    """,
+                arguments: [allowed, allowed, allowed, sourceID]
+            )
+        }
+    }
+
     public func setEnabled(_ enabled: Bool, sourceID: Int64) async throws {
         try await database.writer.write { db in
             try db.execute(sql: "UPDATE source SET enabled = ? WHERE id = ?", arguments: [enabled, sourceID])
@@ -152,7 +172,8 @@ public struct GRDBSourceRepository: SourceRepository {
             lastOKAt: lastOK.map(Date.init(unixSeconds:)),
             failCount: row["fail_count"],
             lastError: row["last_error"],
-            isUserAdded: (row["tier_origin"] as String) == "user"
+            isUserAdded: (row["tier_origin"] as String) == "user",
+            allowsInsecureHTTP: row["allow_http"]
         )
     }
 }

@@ -6,6 +6,13 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Fixed
 
+- Feeds that failed after an OPML import now say why in plain words (removed by the publisher, blocked, temporary server problem, moved to plain http) instead of a bare HTTP code.
+
+### Added
+
+- A trust level menu beside every source in Settings → Sources, so imported feeds need not stay Unverified. Changing it re-labels stored stories.
+- Plain http can be allowed for a single feed, for sites that offer nothing else. CraftPeep refuses http, including redirects to it, for every other feed. Schema v9.
+
 - OPML import refused .opml files on Macs where no other app declares the OPML type: the open panel greyed them out. The app now declares the type (`org.opml.opml`) and also accepts the anonymous type macOS assigns before that registration.
 
 - Several Hacker News submissions of the same news no longer show as separate stories: near-identical headlines from one community source now join (similarity of 0.8 or more). A publisher's own similar posts still stay apart, and a follow-up such as a ground stop being lifted stays separate from the stop itself.

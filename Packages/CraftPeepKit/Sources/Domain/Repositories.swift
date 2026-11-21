@@ -57,6 +57,11 @@ public protocol SourceRepository: Sendable {
     func allSources() async throws -> [Source]
     func enabledSources() async throws -> [Source]
     func setEnabled(_ enabled: Bool, sourceID: Int64) async throws
+    /// How authoritative the user judges the source to be. Affects ranking and verification, never fetching.
+    func setTier(_ tier: SourceTier, sourceID: Int64) async throws
+    /// Allows or forbids plain http for one source. Allowing it also clears the failure count, so the
+    /// next refresh tries straight away.
+    func setAllowsInsecureHTTP(_ allowed: Bool, sourceID: Int64) async throws
     /// For each source, when its newest stored story was published (or first seen, if it gave no date).
     /// Sources with nothing stored are absent.
     func newestStoryDates() async throws -> [Int64: Date]

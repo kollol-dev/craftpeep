@@ -551,7 +551,7 @@ final class AppModel {
         if present > 0 { parts.append("\(present) were already in your sources.") }
         if plan.upgradedToHTTPS > 0 { parts.append("\(plan.upgradedToHTTPS) listed with plain http will be tried over https.") }
         if !plan.skipped.isEmpty { parts.append("Skipped \(plan.skipped.count) that are not web addresses.") }
-        if added > 0 { parts.append("Feeds you add are marked Unverified.") }
+        if added > 0 { parts.append("They start as Unverified; choose how far to trust each one from the menu beside it.") }
         return parts.joined(separator: " ")
     }
 
@@ -972,6 +972,26 @@ final class AppModel {
     }
 
     // MARK: - Settings actions
+
+    /// The user's judgement of how authoritative a source is. Stored stories are re-labelled straight away,
+    /// so support levels and ranking reflect it.
+    func setTier(_ tier: SourceTier, source: Source) async {
+        guard let services else { return }
+        try? await services.sources.setTier(tier, sourceID: source.id)
+        try? await services.intelligence.reclassify(since: Date().addingTimeInterval(-Self.latestWindow))
+        await reload()
+    }
+
+    /// Lets one feed use plain http, for sites that offer nothing else, and fetches it again at once.
+    func setAllowsInsecureHTTP(_ allowed: Bool, source: Source) async {
+        guard let services else { return }
+        try? await services.sources.setAllowsInsecureHTTP(allowed, sourceID: source.id)
+        if allowed {
+            if !source.enabled { try? await services.sources.setEnabled(true, sourceID: source.id) }
+            await refresh(onlyDue: true)
+        }
+        sources = (try? await services.sources.allSources()) ?? sources
+    }
 
     func setEnabled(_ enabled: Bool, source: Source) async {
         guard let services else { return }

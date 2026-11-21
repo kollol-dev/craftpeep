@@ -104,7 +104,8 @@ public actor IngestionService {
                 url,
                 validators: source.validators.isEmpty ? nil : source.validators,
                 accept: adapter.accept,
-                maxBytes: Self.maxResponseBytes
+                maxBytes: Self.maxResponseBytes,
+                allowInsecure: source.allowsInsecureHTTP
             )
 
             switch result {

@@ -1,4 +1,5 @@
 import Domain
+import Ingestion
 import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
@@ -120,17 +121,49 @@ private struct SourcesSettings: View {
                         set: { enabled in Task { await model.setEnabled(enabled, source: source) } }
                     )) {
                         VStack(alignment: .leading, spacing: 2) {
-                            Text(source.name)
+                            HStack(spacing: 4) {
+                                Text(source.name)
+                                if source.allowsInsecureHTTP {
+                                    Image(systemName: "lock.open")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                        .help("Plain http is allowed for this feed")
+                                        .accessibilityLabel("Plain http allowed")
+                                }
+                            }
                             Text(detail(source))
                                 .font(.caption)
                                 .foregroundStyle(source.failCount > 0 && source.enabled ? .primary : .secondary)
-                                .lineLimit(2)
+                                .lineLimit(3)
+                            if !source.allowsInsecureHTTP, needsInsecureHTTP(source) {
+                                Button("Allow Plain http for This Feed") {
+                                    Task { await model.setAllowsInsecureHTTP(true, source: source) }
+                                }
+                                .controlSize(.small)
+                                .help("The site offers this feed only without encryption. Allowing it lets anyone on your network see or alter what this one feed sends.")
+                            }
                         }
                     }
                     Spacer()
-                    Text(source.tier.label)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    Picker("Trust", selection: Binding(
+                        get: { source.tier },
+                        set: { tier in Task { await model.setTier(tier, source: source) } }
+                    )) {
+                        ForEach(SourceTier.allCases, id: \.self) { Text($0.label).tag($0) }
+                    }
+                    .labelsHidden()
+                    .frame(width: 130)
+                    .help("How authoritative this source is. Official sources rank higher and make a story count as official; Unverified ones rank lowest. It never stops a feed being fetched.")
+                    if source.allowsInsecureHTTP {
+                        Button {
+                            Task { await model.setAllowsInsecureHTTP(false, source: source) }
+                        } label: {
+                            Image(systemName: "lock")
+                        }
+                        .buttonStyle(.borderless)
+                        .help("Stop allowing plain http for this feed")
+                        .accessibilityLabel("Require https for \(source.name)")
+                    }
                     if source.isUserAdded {
                         Button(role: .destructive) {
                             Task { await model.removeSource(source) }
@@ -154,7 +187,7 @@ private struct SourcesSettings: View {
                         .disabled(newURL.trimmingCharacters(in: .whitespaces).isEmpty || isAdding)
                 }
                 HStack {
-                    Text(message ?? "Feeds you add are marked Unverified. RSS, Atom and JSON Feed over https.")
+                    Text(message ?? "Feeds you add start as Unverified: that is a trust level, not an error. Change it from the menu beside each feed. RSS, Atom and JSON Feed.")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -198,6 +231,15 @@ private struct SourcesSettings: View {
             }
             isAdding = false
         }
+    }
+
+    /// True when the last failure was the feed needing plain http. Includes the wording macOS used before
+    /// CraftPeep checked redirects itself, so feeds that failed then still offer the way out.
+    private func needsInsecureHTTP(_ source: Source) -> Bool {
+        guard let error = source.lastError else { return false }
+        return error.hasPrefix(IngestionError.insecureRedirectMessage)
+            || error.hasPrefix("Only https is allowed")
+            || error.contains("App Transport Security")
     }
 
     private func detail(_ source: Source) -> String {

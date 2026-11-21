@@ -239,6 +239,10 @@ public final class AppDatabase: Sendable {
                 """)
         }
 
+        migrator.registerMigration("v9-source-allow-http") { db in
+            try db.execute(sql: "ALTER TABLE source ADD COLUMN allow_http INTEGER NOT NULL DEFAULT 0")
+        }
+
         return migrator
     }
 }

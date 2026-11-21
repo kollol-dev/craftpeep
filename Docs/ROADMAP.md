@@ -269,6 +269,15 @@ Checked: 254 package tests pass; the General settings render with the new contro
 
 Not checked: the shortcuts themselves. Operating the app directly needs macOS Screen Recording permission for the Claude app, which is not granted, and the self-screenshot mode cannot press keys.
 
+### Imported feeds: trust levels, plain http, clearer failures — complete (21 November 2026)
+
+Prompted by the owner's OPML file (24 feeds, all working in NetNewsWire). Of the 19 it added, 13 fetched at once. The other six: one removed by its publisher (HTTP 410), two Reddit feeds and VentureBeat blocking feed readers (404/429), one temporary server error at hnrss.org, and one feed that redirects to plain http.
+
+- [x] Plain-language failure messages that say whether retrying can help
+- [x] Per-source permission for plain http, with redirects to http stopped and named otherwise (schema v9). Checked in the sandboxed app with a temporary copy of the redirecting feed: allowed, 15 stories; not allowed, the named redirect. The copies were removed.
+- [x] A trust level menu for every source; changing it re-labels stored stories
+- [x] Not done, deliberately: imitating another app's user agent to get past Reddit, or getting past VentureBeat's bot check
+
 ### M7 Desktop experience
 
 - [ ] Multi-display placement, saved layouts, always-on-top, stacks if still wanted
