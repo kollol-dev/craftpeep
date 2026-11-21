@@ -2,7 +2,7 @@
 
 Significant changes, newest first. Nothing has been released yet.
 
-## 0.1.1
+## 0.1.0
 First pre-alpha release with MVP features
 
 ## Unreleased
