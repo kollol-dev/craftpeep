@@ -6,6 +6,8 @@ Significant changes, newest first. Nothing has been released yet.
 
 ### Fixed
 
+- OPML import refused .opml files on Macs where no other app declares the OPML type: the open panel greyed them out. The app now declares the type (`org.opml.opml`) and also accepts the anonymous type macOS assigns before that registration.
+
 - Several Hacker News submissions of the same news no longer show as separate stories: near-identical headlines from one community source now join (similarity of 0.8 or more). A publisher's own similar posts still stay apart, and a follow-up such as a ground stop being lifted stays separate from the stop itself.
 - Show HN, Ask HN, Tell HN and Launch HN posts join a story only by sharing its link. Two unrelated projects with similar titles had been merged.
 
