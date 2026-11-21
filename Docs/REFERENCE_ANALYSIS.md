@@ -1,4 +1,8 @@
-# Reference Analysis: Kakuchi
+# Reference Analysis
+
+Two reference products: Kakuchi (desktop widgets, below) and NetNewsWire (feed reader, at the end).
+
+## Kakuchi
 
 Researched 10 November 2026. Kakuchi is used as inspiration only; nothing here is copied from it.
 
@@ -127,3 +131,71 @@ Do not compete on placement breadth, widget count or system gauges. One develope
 1. The Reddit thread's comments: feature requests, complaints, developer replies.
 2. Hands-on evaluation of Kakuchi (resource use with ten widgets, builder quality, failure modes). Worth an hour and $15 before the widget canvas is designed (M7).
 3. WidgetAI (getwidgetai.com) and Orbl, both named on Kakuchi's compare page and closer to parts of CraftPeep's scope. Not yet reviewed.
+
+
+## NetNewsWire
+
+Researched 21 November 2026 from netnewswire.com (home page, FAQ, privacy policy), the NetNewsWire blog (posts from April to November 2026) and the GitHub README. The app itself was not installed or run.
+
+### What it is (confirmed from those pages)
+
+| Area | Observation |
+|---|---|
+| Product | A free, open-source RSS reader for Mac, iPhone and iPad. Version 7.3 (18–19 November 2026). Mac needs macOS 15; iOS needs iOS 26. |
+| Lineage and project | First released in 2002; rebooted in 2018. MIT licence. About 10,600 stars, 790 forks and 90 contributors on GitHub. Made by volunteers; the README asks people not to send money. |
+| Formats | RSS, Atom, JSON Feed and RSS-in-JSON. Enclosures and Media RSS from 7.3. |
+| Reading | Shows the articles themselves, with customisable article themes (a community catalogue of them), a Reader view for feeds that publish only summaries (it calls a server hosted by Feedbin), and thumbnails and feed images in the timeline (off by default because they cost bandwidth, memory and storage). |
+| Organising | Folders, starred articles, "All Unread" and "Today" smart feeds (Today is the last 24 hours), hiding read articles and read feeds, search, multiple accounts. |
+| Ordering | Chronological. No ranking. The home page pitches it as an alternative to "big tech social media and their algorithms". |
+| Sync | iCloud, Feedbin, Feedly, BazQux, Inoreader, NewsBlur, The Old Reader and FreshRSS. |
+| Mac specifics | Single-key keyboard shortcuts, column layout (7.2), multiple windows, customisable toolbar, AppleScript, a status bar, a Safari extension for adding feeds, OPML import and export, background refreshing. |
+| Housekeeping | An activity view, an activity log, an error log, account statistics with a database vacuum, and a "Dinosaurs" window listing feeds that have not updated in a chosen number of months. Unread counts can be hidden or shown as a dot (7.2), explicitly to remove the feeling of having to catch up. |
+| Defaults | Sixteen default feeds for new users, so there is something to read straight away. |
+| Privacy | No account. Opt-in crash logs only. The website uses no cookies, JavaScript or trackers. |
+
+### How it compares with CraftPeep as built
+
+| | NetNewsWire | CraftPeep |
+|---|---|---|
+| Job | Read the feeds you chose, in order, and keep track of what you read | Tell you which stories matter today across your sources, and why |
+| Unit | An article | A story: one row however many sources reported it |
+| Order | Chronological | Ranked with stated reasons (Top) or chronological (Latest) |
+| Article text | Rendered in full, themed | Never rendered: headline, excerpt, open the original. HTML from feeds is untrusted by design |
+| Duplicates across sources | Shown separately | Grouped, with every source listed |
+| Provenance labels | None | Source tier, support level, rule-based kind with the rule shown |
+| Summaries and briefing | None | Optional AI, off by default, bring your own key |
+| Beyond feeds | — | Hacker News signal, GitHub's rising repositories, desktop widgets, a menu bar item |
+| Formats | RSS, Atom, JSON Feed, RSS-in-JSON | RSS and Atom only (JSON Feed is not parsed) |
+| Folders, per-feed view | Yes | No. Stories cannot be listed for one source |
+| Mark all read, hide read | Yes | No |
+| OPML import and export | Yes | No |
+| Keyboard | Single-key shortcuts | Command-key shortcuts only; the single-key set in the requirements was not built |
+| Sync and iPhone | Yes, nine options | No (Phase 2 and 3) |
+| Stale and failing feeds | Dinosaurs window, error and activity logs | Failing sources only |
+| Maturity | 24 years, thousands of users, 90 contributors | Unreleased, one user, untested interactions |
+
+### What this means
+
+**As a feed reader, CraftPeep loses on every axis, and should not try to win there.** NetNewsWire is free, open source, mature, synced, on the iPhone, and shows articles properly. Someone who wants to read their feeds should use it. CraftPeep is worth building only as the layer above: the morning view of what matters, grouped and explained, with the reading done in the browser or in a reader.
+
+**There is a real philosophical difference, and some users will choose NetNewsWire because of it.** NetNewsWire's pitch is that you are in control and no algorithm decides. CraftPeep ranks. The answer is the one already in the design: the ranking is a few named rules with the reasons shown, the user can follow and mute topics, and Latest is one click away. It is worth saying this plainly on the project page.
+
+**The two can sit side by side.** A user can keep NetNewsWire for reading and use CraftPeep for the overview, with the same feed list in both. That makes OPML import the single most useful thing to borrow: it is how such a user brings their feeds across in one step.
+
+### Worth borrowing, in order
+
+1. **OPML import and export.** The way users move feed lists between apps; small to build; the OPML parser can reuse the feed parser's limits.
+2. **JSON Feed.** Some independent blogs publish only JSON Feed. A second small parser.
+3. **A view of one source's stories, and Mark All as Read.** Basic expectations of anything that shows feeds.
+4. **Single-key shortcuts** (j/k or arrows, space, m for read, s for save). Already in the requirements; not built.
+5. **A stale-sources list and a fetch log view.** The data is already stored (`fetch_log`, `last_ok_at`).
+6. **Hiding the unread badge, or showing a dot.** NetNewsWire added this to remove the pressure to catch up; CraftPeep's menu bar badge creates the same pressure.
+
+Not worth borrowing now: rendering article HTML and themes (conflicts with CraftPeep treating feed HTML as untrusted, and duplicates what a reader does well), thumbnails (bandwidth, and CraftPeep is text-first), and third-party sync services (CraftPeep's sync is a later, separate decision).
+
+### Confirmations of earlier decisions
+
+- **macOS 15 as the minimum** is the same choice NetNewsWire made for its current version.
+- **A curated default feed list** is long-standing NetNewsWire practice; its reason (something to read straight away) is the same. NetNewsWire ships 16; CraftPeep ships 34, which may be more than a newcomer needs.
+- **Free, open source and maintained by volunteers is viable** for a Mac reader. NetNewsWire uses MIT, a data point for the open licence question in ADR-012.
+- **Standard controls pay off.** NetNewsWire's blog credits them for supporting a new iPhone form factor with no work; CraftPeep's interface uses standard controls throughout.
